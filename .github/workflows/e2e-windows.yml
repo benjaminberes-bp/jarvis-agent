@@ -10,6 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # this is separated so we don't have node.js and stuff
   build-installer:
     name: Build Hermes-Setup.exe
     runs-on: windows-latest
