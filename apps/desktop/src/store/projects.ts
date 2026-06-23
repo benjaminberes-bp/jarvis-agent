@@ -126,6 +126,53 @@ export function resolveNewSessionCwd(): string {
   return workspaceCwdForNewSession()
 }
 
+const underPath = (parent: string, child: string): boolean =>
+  child === parent || child.startsWith(parent.endsWith('/') ? parent : `${parent}/`)
+
+// The project (explicit or auto) that owns `cwd`, by longest path match across
+// the live tree. Null when no project covers it (it'll surface as a fresh
+// auto-project on the next tree refresh).
+function projectIdForCwd(cwd: string): null | string {
+  let best: null | string = null
+  let bestLen = -1
+
+  for (const project of $projectTree.get()) {
+    for (const path of [project.path, ...project.repos.map(repo => repo.path)]) {
+      const p = (path || '').trim()
+
+      if (p && underPath(p, cwd) && p.length > bestLen) {
+        bestLen = p.length
+        best = project.id
+      }
+    }
+  }
+
+  return best
+}
+
+// The active session's agent relocated itself (created/entered another repo or
+// worktree via the terminal — backend re-anchors its cwd and emits session.info).
+// Re-pull projects + tree so a freshly created/auto project and the relocated
+// session row show live, then follow the view into the session's new project
+// (from the overview or a now-stale project alike). Caller gates this on a real
+// same-session cwd move, so a plain session switch never reaches here.
+export async function followActiveSessionCwd(cwd: string): Promise<void> {
+  const target = cwd.trim()
+
+  if (!target) {
+    return
+  }
+
+  await Promise.all([refreshProjects(), refreshProjectTree()])
+
+  // Resolve only after the refresh, so a just-created/auto project is in the tree.
+  const projectId = projectIdForCwd(target)
+
+  if (projectId && projectId !== $projectScope.get()) {
+    enterProject(projectId)
+  }
+}
+
 // Issue a request on whichever gateway is currently active, reconnecting once
 // if the socket dropped. Projects are per-profile, so they intentionally follow
 // the active gateway just like the session list does.

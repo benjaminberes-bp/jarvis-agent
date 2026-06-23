@@ -35,7 +35,9 @@ import { dispatchNativeNotification } from '@/store/native-notifications'
 import { notify } from '@/store/notifications'
 import { requestDesktopOnboarding } from '@/store/onboarding'
 import { clearAllPrompts, setApprovalRequest, setSecretRequest, setSudoRequest } from '@/store/prompts'
+import { followActiveSessionCwd } from '@/store/projects'
 import {
+  $currentCwd,
   setCurrentBranch,
   setCurrentCwd,
   setCurrentFastMode,
@@ -340,6 +342,9 @@ export function useMessageStream({
   const nativeSubagentSessionsRef = useRef<Set<string>>(new Set())
   // Turns that auto-compacted: skip post-turn hydrate so live scrollback survives.
   const compactedTurnRef = useRef<Set<string>>(new Set())
+  // Last session we applied a session.info cwd for — lets us tell an agent
+  // relocating the SAME session (follow it) from a session switch (don't yank).
+  const lastCwdInfoSessionRef = useRef<null | string>(null)
 
   const flushQueuedDeltas = useCallback(
     (sessionId?: string) => {
@@ -747,7 +752,20 @@ export function useMessageStream({
           }
 
           if (typeof payload?.cwd === 'string') {
+            // The active session's agent can relocate itself (new repo/worktree
+            // via the terminal). When the SAME active session's cwd actually
+            // moves, follow it — refresh the project tree + scope so the sidebar
+            // tracks the live thread. A fresh selection (different session id)
+            // is a switch, not a move, so it refreshes data without yanking scope.
+            const cwdMoved = payload.cwd !== $currentCwd.get()
+            const sameSession = !!sessionId && sessionId === lastCwdInfoSessionRef.current
+
+            lastCwdInfoSessionRef.current = sessionId
             setCurrentCwd(payload.cwd)
+
+            if (cwdMoved && sameSession) {
+              void followActiveSessionCwd(payload.cwd)
+            }
           }
 
           if (typeof payload?.branch === 'string') {
