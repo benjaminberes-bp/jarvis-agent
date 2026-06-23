@@ -4,16 +4,26 @@
 
 ## Contexte rapide
 
-**jarvis** = nouvelle instance Hermes dédiée à l'**usage personnel de Michael Martin (CEO Bienprêter)**. Distinct d'Alfred (agent marketing collectif). Single-user. **Repo créé** le 2026-06-23 (fork upstream) ; docs de suivi greffés ; pas encore de code applicatif ni de serveur — phase de planning.
+**jarvis** = nouvelle instance Hermes dédiée à l'**usage personnel de Michael Martin (CEO Bienprêter)**. Distinct d'Alfred (agent marketing collectif). Single-user. **Phase 0 close + Phase 1 build on-box validé** : serveur Scaleway `jarvis-prod` live, image `jarvis:latest` buildée + bootée (s6, honcho baké). Reste Phase 1 = Honcho self-hosted, puis canaux (Phase 2) et onboarding CEO (Phase 3).
 
 > ⚠️ **Dir projet = `claude-projects/jarvis-agent/`** (l'ancien `jarvis/` est vide). Toute session de travail se lance depuis `jarvis-agent/`. Remotes : `origin`=`benjaminberes-bp/jarvis-agent`, `upstream`=`nousresearch/hermes-agent` (re-merge).
 
 Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur **Hermes** (build on-box, rebrand au build) + **Honcho** self-hosted (mémoire) + **Slack** (natif) + **WhatsApp** (bridge Baileys natif) + UI **hermes-webui** (nesquena, purpose-built pour ce moteur).
 
-## 🆕 Dernière session (2026-06-23) — PHASE 0 BOUCLÉE (provisioning + accès + durcissement + Docker)
+## 🆕 Dernière session (2026-06-23) — PHASE 1 item 4 : BUILD ON-BOX VALIDÉ + premier boot OK
 
-> ✅ Instance live, accès SSH stable (reboot-proof via `instance_keys`), OS durci (ufw+fail2ban+swap+MAJ), Docker CE 29.6.0 installé. DNS/TLS différé Phase 2 (domaine = sous-domaine `bienpreter.com`). **Prochain = Phase 1 : build image Hermes ON-BOX.**
-> ⚠️ Incident résolu cette session : injection clé manuelle dans `authorized_keys` wipée par `scw-fetch` (gotcha Scaleway) → lockout récupéré via `alfred_par1`, fix durable = `instance_keys`. Cf. DECISIONS + mémoire `scaleway-ssh-instance-keys`.
+> ✅ Image **`jarvis:latest`** buildée nativement sur `jarvis-prod` (exit 0, 5,28 Go), premier boot **clean sous s6** (71 skills, services up). **Smoke OK** : `honcho 2.0.1` importable (✅ valide le bake PR #2), `hermes v0.17.0 · upstream 759ae605` (SHA baké), `config.yaml` seedé (`display:` plein). Volume `jarvis-data` créé. Conteneur `jarvis` tourne (smoke `sleep infinity`). **PR #2 validée → à merger.**
+> **Prochain = Phase 1 item 5 : Honcho self-hosted** (pgvector+redis+ollama+haiku) puis wire `memory.provider`.
+
+### 🐳 Build & boot (cette session)
+- Repo cloné on-box : **`/opt/jarvis-agent`** (HTTPS, repo public, branche `feat/port-alfred-technique`, HEAD `759ae605`). Scripts s6 en LF (`.gitattributes` + checkout Linux) → pas de casse s6.
+- `docker build --build-arg HERMES_GIT_SHA=$(git rev-parse HEAD) -t jarvis:latest .` → exit 0. Log : `/opt/jarvis-build.log`.
+- Boot : `docker run -d --name jarvis --restart unless-stopped -v jarvis-data:/opt/data jarvis:latest sleep infinity`. Services s6 (`main-hermes`+`dashboard`) supervisés indépendamment du CMD.
+- `memory.provider: ''` laissé vide (défaut local) → wiring Honcho = item 5. `SOUL.md` = défaut (persona Jarvis différé onboarding).
+
+### Session précédente (2026-06-23) — PHASE 0 BOUCLÉE (provisioning + accès + durcissement + Docker)
+> ✅ Instance live, accès SSH stable (reboot-proof via `instance_keys`), OS durci (ufw+fail2ban+swap+MAJ), Docker CE 29.6.0 installé. DNS/TLS différé Phase 2 (domaine = sous-domaine `bienpreter.com`).
+> ⚠️ Incident résolu : injection clé manuelle dans `authorized_keys` wipée par `scw-fetch` (gotcha Scaleway) → lockout récupéré via `alfred_par1`, fix durable = `instance_keys`. Cf. DECISIONS + mémoire `scaleway-ssh-instance-keys`.
 
 
 ### 🖥️ Instance `jarvis-prod` CRÉÉE (Scaleway, payante, live)
@@ -45,9 +55,9 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 2. ⏭️ **DNS + Caddy/TLS — DIFFÉRÉ à Phase 2** (requis seulement à l'expo publique de la webui). Domaine décidé : **sous-domaine `bienpreter.com`** (ex. `jarvis.bienpreter.com`) → A record vers `51.15.106.239` le moment venu. Accès d'ici là = SSH. ✅ **Phase 0 considérée CLOSE.**
 
 ### Phase 1 — Moteur Hermes + Honcho (dép. Phase 0)
-3. ✅ **Fork + remote** (PR #1) + ✅ **Dockerfile : bake Honcho** (PR #2, `--extra honcho` ; rebrand sed écarté → identité par `SOUL.md`). **Build non testé** (pas de serveur) → à valider au 1er build on-box (item 4).
-4. **[Critique/Medium]** Build image **SUR LE SERVEUR** (gotchas : CRLF/s6, prune disque) + premier boot + `config.yaml` (`display: {}`).
-5. **[High/Large]** Honcho self-hosted (pgvector+redis+ollama embeddings + haiku) + wire `memory.provider`.
+3. ✅ **Fork + remote** (PR #1) + ✅ **Dockerfile : bake Honcho** (PR #2, `--extra honcho`). **Build validé on-box** (item 4) → PR #2 mergeable.
+4. ✅ **Build image ON-BOX + premier boot** : `jarvis:latest` buildée (exit 0), boot s6 clean, smoke OK (honcho 2.0.1 importable, SHA baké, `config.yaml display:` plein). Volume `jarvis-data`.
+5. **[High/Large] ← PROCHAIN** Honcho self-hosted (pgvector+redis+ollama embeddings + haiku) + wire `memory.provider` (actuellement `''`=local).
 
 ### Phase 2 — Canaux & UI (dép. Phase 1)
 6. **[High/Small]** Slack : app + tokens + connecteur natif.
@@ -62,19 +72,19 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 11. **[Medium/Medium]** Script de sync serveur→repo (adapter `sync-from-box.sh` d'Alfred).
 12. **[Medium/Small]** Runbooks recreate/rollback + smoke tests + vérif MCP.
 
-## 🎯 Kickoff Phase 1 (prochaine session) — build Hermes ON-BOX
+## 🎯 Kickoff prochaine session — Phase 1 item 5 : Honcho self-hosted
 
-**Pré-requis OK** : `ssh jarvis-prod` (root, stable), Docker CE 29.6.0 + Compose v5.1.4, 83G libres.
+**Pré-requis OK** : `ssh jarvis-prod` (root), Docker CE 29.6.0 + Compose v5.1.4, image `jarvis:latest` buildée + conteneur `jarvis` qui tourne (volume `jarvis-data`), repo on-box `/opt/jarvis-agent`. ~78 Go libres (image = 5,3 Go).
 
-Étapes pressenties (valider/adapter sur la procédure éprouvée d'Alfred = `../hermes-agent/alfred-agent/DECISIONS.md` + son `Dockerfile`/`deploy/`) :
-1. **Amener le code sur le serveur** : cloner `benjaminberes-bp/jarvis-agent` sur la box (`git clone` depuis le serveur — PAS de git en prod côté data, mais le repo build oui), branche `feat/port-alfred-technique` (porte le Dockerfile bake-Honcho). ⚠️ Régler le **CRLF** (`.gitattributes`/`git config core.autocrlf input`) sinon s6 casse au boot.
-2. **`docker build`** de l'image (gotcha hérité : build natif on-box obligatoire, JAMAIS sous Windows ; prune disque si besoin). Valide le Dockerfile non testé (`--extra honcho`).
-3. **Premier boot** du conteneur + **`config.yaml`** : éditer le fichier **directement** (PAS `hermes config set` — lossy) ; `display: {}` (jamais `null`) ; data = **volume Docker** (pas de bind git).
-4. **Rédiger `SOUL.md` Jarvis** (persona CEO Michael) → écrase le défaut `default_soul.py` « Hermes Agent ».
-5. Si build OK → **merger PR #2** (le build la valide).
-6. Enchaîner **Honcho self-hosted** (item 5 : pgvector+redis+ollama embeddings + haiku ; wire `memory.provider` dans `config.yaml`).
+**Référence éprouvée = la stack Honcho d'Alfred** (`../hermes-agent/alfred-agent/` : `DECISIONS.md` + `/opt/honcho-stack` côté box Alfred `163.172.181.112`). Étapes pressenties :
+1. **Stack Honcho** : `docker compose` pgvector + redis + ollama (embeddings) + provider text-gen (haiku via clé Anthropic). Monter `/opt/honcho-stack` on-box, secrets en `.env` (jamais commit). ⚠️ RAM : ollama embeddings → surveiller (16 Go + swap 4 Gi).
+2. **Wire mémoire** : éditer **directement** `config.yaml` du conteneur (`memory.provider` → honcho ; PAS `hermes config set` — lossy). Aligner l'URL Honcho sur le réseau Docker (conteneur jarvis ↔ stack honcho : même réseau ou `host.docker.internal`/IP bridge).
+3. **Smoke mémoire** : un échange → vérifier write/recall Honcho (table pgvector peuplée).
+4. ⚠️ Docker **bypass ufw** → publier Honcho en `127.0.0.1:` (jamais exposé public).
 
-**Rappels durs** : ne **jamais** éditer `~/.ssh/authorized_keys` (scw-fetch le wipe → cf. mémoire `scaleway-ssh-instance-keys`) ; Docker bypass ufw → publier en `127.0.0.1:` ; commits PR-based, jamais sur `main`.
+**Puis Phase 2** (canaux & UI) : Slack natif, WhatsApp Baileys (numéro dédié), hermes-webui (auth native). **Puis Phase 3** : onboarding voie B (interview Michael) → `SOUL.md` Jarvis + `USER.md`.
+
+**Rappels durs** : ne **jamais** éditer `~/.ssh/authorized_keys` (scw-fetch le wipe → mémoire `scaleway-ssh-instance-keys`) ; Docker bypass ufw → `127.0.0.1:` ; `config.yaml` édité **direct** (pas `hermes config set`), `display:` jamais `null` ; commits PR-based, jamais sur `main`.
 
 ## Décisions tranchées (2026-06-23)
 - ✅ **Auth UI** : **native hermes-webui** (`HERMES_WEBUI_PASSWORD` ou WebAuthn/passkeys). Pas de magic-link (sur-ingénierie pour 1 user). Durcir si exposition publique.
@@ -110,15 +120,16 @@ Choix actés : Scaleway dédié, single-user, rebrand au build, UI=hermes-webui 
 WhatsApp=Baileys (numéro dédié jetable), Slack natif, Honcho self-hosted, onboarding voie B.
 Estimation ~4,5–8 j-ingé, ~30–80 €/mo.
 
-ÉTAT : ✅ PHASE 0 CLOSE. Instance jarvis-prod live (51.15.106.239), accès `ssh jarvis-prod`
-stable/reboot-proof (clé dans /root/.ssh/instance_keys — NE PAS éditer authorized_keys, scw-fetch
-le wipe), OS durci (ufw 22/80/443 + fail2ban + swap 4Gi), Docker CE 29.6.0 + Compose v5.1.4.
-DNS/TLS différé Phase 2 (domaine prévu = sous-domaine bienpreter.com).
+ÉTAT : ✅ PHASE 0 CLOSE + ✅ PHASE 1 item 4 (build on-box). Instance jarvis-prod live (51.15.106.239),
+accès `ssh jarvis-prod` stable/reboot-proof (clé dans /root/.ssh/instance_keys — NE PAS éditer
+authorized_keys, scw-fetch le wipe), OS durci (ufw + fail2ban + swap 4Gi), Docker CE 29.6.0.
+Image `jarvis:latest` buildée on-box (exit 0), boot s6 clean, smoke OK (honcho 2.0.1 importable,
+SHA baké, config.yaml display: plein). Volume jarvis-data. Repo on-box /opt/jarvis-agent. PR #2 mergée.
 
-PROCHAINE ÉTAPE : Phase 1 — build image Hermes ON-BOX (valide le Dockerfile non testé de la PR #2 :
-bake Honcho). Cloner le repo sur le serveur, build (gotchas : CRLF/s6, prune disque), premier boot,
-config.yaml (display: {}). PUIS Honcho self-hosted (pgvector+redis+ollama+haiku). PR #2 laissée
-ouverte jusqu'à ce build (le valide avant merge).
-Décisions ouvertes : usage CEO précis (→ interview onboarding), voie A vs B définitif.
+PROCHAINE ÉTAPE : Phase 1 item 5 — Honcho self-hosted (docker compose pgvector+redis+ollama
+embeddings+haiku) sur jarvis-prod, réf = stack Honcho d'Alfred (../hermes-agent/alfred-agent/ +
+/opt/honcho-stack box Alfred). Puis wire config.yaml memory.provider=honcho (édit DIRECT, pas
+hermes config set). Honcho en 127.0.0.1: (Docker bypass ufw). PUIS Phase 2 (Slack/WhatsApp/webui).
+Décisions ouvertes : usage CEO précis (→ interview onboarding Phase 3), voie A vs B définitif.
 Savoir-faire infra éprouvé = DECISIONS.md d'Alfred (../hermes-agent/alfred-agent/).
 ```

@@ -21,7 +21,9 @@ Fork sans cycle de release → **jalons datés, pas de tags SemVer**.
 
 ### Changed
 - **2026-06-23** — **Dockerfile : bake Honcho** (branche `feat/port-alfred-technique`, PR #2). `--extra honcho` ajouté à `uv sync` (sinon perdu au recreate). **Rebrand au build Hermes→Jarvis ÉCARTÉ** (≠ Alfred) : Jarvis sert l'UI via hermes-webui (pas le dashboard baked) → sed `web_dist` inutile ; libellés `.py` = CLI non vus ; identité chat = `SOUL.md` custom (écrase `default_soul.py`). Dockerfile diverge d'upstream d'**1 ligne** → merges quasi-triviaux. CLIs/MCP marketing non portés. Build non testé (pas de serveur).
+- **2026-06-23** — **Phase 1 — build image ON-BOX validé + premier boot OK** (item 4). Repo cloné sur `jarvis-prod` (`/opt/jarvis-agent`, branche `feat/port-alfred-technique`), `docker build` natif réussi (exit 0) → image **`jarvis:latest`** (5,28 Go disque / 1,27 Go content). Premier boot sous **s6-overlay** clean (stage2-hook OK, 71 skills bundlés, services `main-hermes`+`dashboard` up). **Smoke tests OK** : `honcho 2.0.1` importable (✅ valide le bake PR #2 — le SDK vit dans l'image, pas le volume), `hermes --version` = `v0.17.0 · upstream 759ae605` (✅ build SHA baké), `config.yaml` seedé (16 Ko, bloc `display:` plein — pas `null`), `SOUL.md` seedé (défaut). Volume `jarvis-data` créé. **PR #2 validée par le build.**
 
 ### À venir
 - `scripts/sync-from-box.sh` + runbooks `deploy/` recreate/rollback : **différés** à Phase 0/4 (params serveur désormais connus — IP `51.15.106.239`).
-- Phase 0 (reste) — durcissement étape B (activer ufw 22/80/443 + jail fail2ban sshd), install Docker, DNS + Caddy/TLS.
+- Phase 1 (reste) — item 5 : **Honcho self-hosted** (pgvector + redis + ollama embeddings + haiku text-gen) + wire `memory.provider` dans `config.yaml` (actuellement vide = défaut local).
+- Phase 3 — rédiger `SOUL.md` Jarvis (persona CEO Michael) à l'onboarding → écrase le défaut « Hermes Agent ».

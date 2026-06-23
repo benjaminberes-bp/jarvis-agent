@@ -14,6 +14,24 @@
 
 ---
 
+## 2026-06-23 — Phase 1 item 4 : build image ON-BOX validé + premier boot OK (PR #2 validée)
+
+**Contexte** : la PR #2 (bake Honcho) avait été ouverte mais **jamais testée** (build impossible sous Windows — gotcha Docker Desktop/BuildKit/CRLF). Le serveur `jarvis-prod` étant désormais prêt (Phase 0 close), exécuter le 1er build natif on-box pour valider le Dockerfile.
+
+**Décision / résultat** :
+- Repo cloné sur la box via **HTTPS** (`https://github.com/benjaminberes-bp/jarvis-agent.git`, repo **public** → pas d'auth), branche `feat/port-alfred-technique`, dans **`/opt/jarvis-agent`**. CRLF non problématique : checkout Linux natif = LF (+ `.gitattributes` force `eol=lf` sur `*.sh`/`Dockerfile`). `file` confirme scripts s6 en LF.
+- **`docker build` natif réussi** (exit 0) → image **`jarvis:latest`** (5,28 Go disque / 1,27 Go content). Build-arg `HERMES_GIT_SHA=$(git rev-parse HEAD)` passé → SHA baké.
+- **Premier boot** (`docker run -d --restart unless-stopped -v jarvis-data:/opt/data jarvis:latest sleep infinity`) **clean sous s6-overlay** : stage2-hook exit 0, 71 skills bundlés, services `main-hermes` + `dashboard` démarrés.
+- **Smoke tests verts** : `honcho 2.0.1` importable dans le venv (✅ **valide le bake** — objet de la PR #2 ; le SDK vit dans l'image immuable, survit au recreate) ; `hermes --version` → `Hermes Agent v0.17.0 (2026.6.19) · upstream 759ae605` (✅ build SHA baké lisible) ; `config.yaml` seedé (16 Ko) avec bloc **`display:` plein** (ni `null` ni `{}` — gotcha respecté) ; `SOUL.md` seedé (template défaut, persona vide).
+- **`memory.provider: ''`** (vide) laissé tel quel → défaut local, **wiring Honcho = item 5** (stack pas encore déployée).
+- **SOUL.md custom Jarvis NON rédigé maintenant** : le persona dépend de l'usage CEO (décision ouverte, cernée à l'onboarding voie B Phase 3) → ne pas inventer. Reste le défaut « Hermes Agent » jusqu'à l'onboarding.
+
+**Impact** : Phase 1 item 4 **clos**. PR #2 validée par le build → **mergeable**. Volume `jarvis-data` créé (data persistante). Conteneur `jarvis` tourne en `sleep infinity` (smoke) — les services s6 supervisés tournent indépendamment du CMD ; le boot « prod » réel (sans override) viendra avec le wiring des canaux Phase 2. Prochain : **Honcho self-hosted** (item 5).
+
+**Statut** : actif
+
+---
+
 ## 2026-06-23 — Accès SSH `jarvis_prod` : la clé doit vivre dans `/root/.ssh/instance_keys` (gotcha Scaleway scw-fetch)
 
 **Contexte** : après injection manuelle de la pubkey `jarvis_prod` dans `~/.ssh/authorized_keys`, l'accès a **sauté en pleine session** (durcissement étape A). Diagnostic : `Permission denied (publickey)` alors que perms OK et fail2ban clean.
