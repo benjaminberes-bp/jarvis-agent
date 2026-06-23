@@ -14,6 +14,60 @@
 
 ---
 
+## 2026-06-23 — Phase 2 item 6 : Slack natif DÉPLOYÉ + validé end-to-end
+
+**Contexte** : 1er canal. Owner a fourni les tokens Slack (app jarvis, workspace promup.slack.com / team T01AXTJLEN9) + tranché « réutiliser la clé Alfred » pour le moteur LLM.
+
+**Décision / résultat** :
+- **Tokens en env conteneur** (mécanisme Alfred : gateway lit `os.getenv`) via `--env-file /opt/data/.env` (600 hermes, jamais commit) : `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_ALLOWED_USERS`, `ANTHROPIC_API_KEY`. ⚠️ `--env-file` lit côté **hôte** → chemin = mountpoint volume (`/var/lib/docker/volumes/jarvis-data/_data/.env`), pas `/opt/data`.
+- **Allowlist stricte** : `SLACK_ALLOWED_USERS=U08JAMRR1T3,U01AU8P3BT8` (Benjamin BERES + Michaël MARTIN ; IDs résolus via Slack). Slack = Socket Mode (`connections:write`) → **aucun port inbound**.
+- **Recreate conteneur `jarvis`** (UN seul, groupe Anthropic + Slack) calqué sur Alfred : `docker run -d --name jarvis --restart unless-stopped --env-file <vol>/.env -v jarvis-data:/opt/data jarvis:latest **gateway run**` puis **`docker network connect honcho-net jarvis`** (réseau perdu au recreate — réattacher). Le `sleep infinity` du smoke item 4 est abandonné → boot prod réel (CMD `gateway run`).
+- **Plateforme auto-activée** depuis la présence de `SLACK_BOT_TOKEN` (`gateway/config.py _apply_env_overrides`) — pas de config d'activation manuelle. Log : `Authenticated as @jarvis`, `Socket Mode connected`, `✓ slack connected`.
+- **Smoke end-to-end validé** : DM de Benjamin (allowlisté) → inbound reçu → session Honcho créée (write mémoire OK) → turn `provider=anthropic model=claude-opus-4-6` → réponse livrée sur Slack (« déploiement validé ✅ »). Valide en une passe : Socket Mode + allowlist + clé LLM + write Honcho + delivery.
+
+**Points ouverts (tuning, non bloquant)** :
+- **Persona = défaut « Hermes Agent »** (SOUL.md pas encore custom) → rebrand identité Jarvis à l'onboarding Phase 3.
+- **Modèle défaut `claude-opus-4-6`** (cher) — à arbitrer (haiku/sonnet pour le quotidien ?).
+- **Providers auxiliaires `openrouter`/`nous`** sans crédit → warnings dans les logs (fallback anthropic OK) ; à désactiver dans `config.yaml` pour nettoyer.
+- **Home channel Slack** non défini (`/hermes sethome`) — optionnel (cron/cross-platform delivery).
+
+**Statut** : actif — **item 6 CLOS** (Slack opérationnel).
+
+---
+
+## 2026-06-23 — Phase 1 item 5 : Honcho self-hosted DÉPLOYÉ + wired (mémoire opérationnelle)
+
+**MAJ deploy (même jour)** : le kit (ci-dessous) a été **déployé de bout en bout** sur `jarvis-prod` avec aval owner.
+- `/opt/honcho-stack` (clone honcho officiel) + artefacts montés. `docker network honcho-net` créé.
+- Services up : `ollama` (modèle `nomic-embed-text` 274 Mo pull), `database` (pgvector, healthy), `redis` (healthy), `api` (healthy, `/health`=ok), `deriver` (boucle OK).
+- **Clé Anthropic récupérée du serveur Alfred** (`alfred-auto:/opt/honcho-stack/.env`), transférée **en pipe serveur→serveur** (jamais en clair) dans `jarvis-prod:/opt/honcho-stack/.env`.
+- **Embeddings 768** : `alembic upgrade head` puis `configure_embeddings.py --yes` (ALTER vector→768, HNSW recréés) AVANT up api (sinon dimension mismatch 1536).
+- **Wire jarvis** : conteneur `jarvis` attaché à `honcho-net` (joint `honcho-api:8000` OK), skill `autonomous-ai-agents/honcho` installé, `honcho.json` (`baseUrl=http://honcho-api:8000`, `workspace=jarvis`, AUTH off), `config.yaml memory.provider: honcho` (édition DIRECTE ligne 422, backup pris — PAS `hermes config set`), reload `s6-svc -r main-hermes`.
+- **Smoke** : `hermes honcho status` → **OK** (connection établie, workspace jarvis, "no peer data yet" = normal, 0 conversation).
+- ⚠️ **Clé LLM du moteur jarvis lui-même** (≠ Honcho) : owner a tranché **réutiliser la clé Alfred** → stagée dans `jarvis-prod:/opt/data/.env` (`ANTHROPIC_API_KEY`, 600 hermes). **Effective seulement au recreate du conteneur** (Alfred lit les secrets en env conteneur via `os.getenv`, source = `--env-file /opt/data/.env`). Recreate différé pour le grouper avec le wire Slack (un seul recreate).
+
+**Statut** : actif — **item 5 CLOS** (mémoire opérationnelle).
+
+---
+
+## 2026-06-23 — Phase 1 item 5 (a) : kit de déploiement Honcho porté d'Alfred
+
+**Contexte** : item 5 = Honcho self-hosted. Alfred porte une recette **éprouvée en prod** (`docker/honcho/` : `config.toml` + `docker-compose.override.yml` + `honcho.env.example` + `README.md`) — absente d'upstream et de jarvis. « Porter la technique d'Alfred » (CLAUDE.md) = rapatrier ce kit.
+
+**Décision** :
+- **Kit porté dans `docker/honcho/`** (branche `feat/honcho-self-host`, PR #3) adapté Jarvis : `alfred-gw`→`jarvis`, `alfred-deploy`→`jarvis-prod`, workspace `bienpreter`→`jarvis`, chemins `/opt/jarvis-agent`. Stack = Honcho officiel + **Ollama embeddings local** (`nomic-embed-text`, 768 dims, aucune donnée ne sort) + text-gen **Anthropic `claude-haiku-4-5`** (faible coût). AUTH off (réseau docker interne `honcho-net`).
+- **Ajustement Jarvis vs runbook Alfred** : l'étape runtime `uv pip install honcho-ai` du README Alfred est **supprimée** — le SDK est **déjà baké + validé** dans l'image Jarvis (honcho 2.0.1, smoke item 4). Alfred l'avait câblé avant son bake ; Jarvis part propre.
+- **Activation provider = édition directe de `config.yaml`** (`memory.provider: honcho`), PAS `hermes config set` (lossy, règle CLAUDE.md) — diverge du README Alfred qui utilisait `config set`.
+- **Deploy on-box NON exécuté cette session (gaté)** : nécessite (1) **clé Anthropic** (secret, owner) à coller dans `/opt/honcho-stack/.env`, (2) **go owner** sur la charge RAM (Ollama+PG+Redis sur 16 Go+swap), (3) le `docker compose up` + reconfigure embeddings 768 + wire = opération contiguë à mener avec la clé. Porter le kit (secret-free) maintenant ; déployer ensuite.
+
+**Alternatives écartées** : déployer la stack autonome sans clé → laisserait un demi-état (api refuse de démarrer sans embeddings 768 / sans clé text-gen) confus. Réutiliser la clé Alfred → décision owner, pas auto.
+
+**Impact** : kit prêt et reviewable. Reste à faire (gaté) : exécuter la séquence du `docker/honcho/README.md` sur `jarvis-prod` avec la clé. ⚠️ Caveat 768 (migration crée 1536 par défaut → `configure_embeddings.py --yes`).
+
+**Statut** : actif
+
+---
+
 ## 2026-06-23 — Phase 1 item 4 : build image ON-BOX validé + premier boot OK (PR #2 validée)
 
 **Contexte** : la PR #2 (bake Honcho) avait été ouverte mais **jamais testée** (build impossible sous Windows — gotcha Docker Desktop/BuildKit/CRLF). Le serveur `jarvis-prod` étant désormais prêt (Phase 0 close), exécuter le 1er build natif on-box pour valider le Dockerfile.

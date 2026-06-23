@@ -8,3 +8,8 @@ web/package-lock.json linguist-generated=true
 Dockerfile  text eol=lf
 *.dockerfile text eol=lf
 docker/entrypoint.sh text eol=lf
+
+# Honcho self-host artefacts montés dans les conteneurs api/deriver (LF strict).
+docker/honcho/*.toml text eol=lf
+docker/honcho/*.yml  text eol=lf
+docker/honcho/*.env.example text eol=lf
