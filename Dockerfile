@@ -175,9 +175,15 @@ RUN npm install --prefer-offline --no-audit && \
 # while still making Matrix work in the published container. Fixes #30399.
 #
 # The editable link is created after the source copy below.
+#
+# `--extra honcho` (honcho-ai==2.0.1, in uv.lock): the Jarvis deploy uses the
+# self-hosted Honcho memory backend, so the SDK must be baked rather than
+# lazy-installed at runtime (the venv lives in the image, not the data volume,
+# so a runtime `uv pip install` is lost on every container recreate). Mirrors
+# the sibling Alfred fork's Honcho bake (DECISIONS 2026-06-23).
 COPY pyproject.toml uv.lock ./
 RUN touch ./README.md
-RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra anthropic --extra bedrock --extra azure-identity --extra hindsight --extra matrix
+RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra anthropic --extra bedrock --extra azure-identity --extra hindsight --extra matrix --extra honcho
 
 # ---------- Frontend build (cached independently from Python source) ----------
 # Copy only the frontend source trees first so that Python-only changes don't
@@ -196,6 +202,60 @@ COPY . .
 # cached layer above; `--no-deps` makes this a fast egg-link creation with no
 # resolution or downloads.
 RUN uv pip install --no-cache-dir --no-deps -e "."
+
+# ---------- Jarvis rebrand (build-time, display strings only) ----------
+# Rebrand applied at BUILD, not in source, so the fork tree stays identical to
+# upstream nousresearch/hermes-agent → clean `git merge upstream/main` with no
+# conflicts on near-daily upstream updates. Only USER-FACING display phrases are
+# rewritten; internal identifiers (HERMES_HOME, the `hermes` command, ~/.hermes,
+# module names, URLs) are deliberately left untouched. Add new display phrases
+# here rather than editing source files. Mirrors the proven sibling Alfred fork
+# rebrand minus the marketing backdrop swap — Jarvis ships display strings only.
+# Must run BEFORE the `chmod a-w /opt/hermes` immutability lock below.
+RUN set -e; \
+    for d in hermes_cli gateway agent tools cron acp_adapter providers tui_gateway; do \
+        if [ -d "/opt/hermes/$d" ]; then \
+            find "/opt/hermes/$d" -name '*.py' -type f -exec sed -i \
+                -e 's/Hermes Agent/Jarvis/g' \
+                -e 's/Hermes Gateway/Jarvis Gateway/g' \
+                -e 's/Hermes Commands/Jarvis Commands/g' \
+                -e 's/Hermes Desktop/Jarvis Desktop/g' \
+                -e 's/Hermes Setup/Jarvis Setup/g' {} +; \
+        fi; \
+    done; \
+    for f in /opt/hermes/cli.py /opt/hermes/run_agent.py; do \
+        [ -f "$f" ] && sed -i -e 's/Hermes Agent/Jarvis/g' -e 's/Hermes Commands/Jarvis Commands/g' "$f" || true; \
+    done
+
+# ---------- Jarvis web UI rebrand (prebuilt dist: display strings) ----------
+# The web dashboard SPA is a prebuilt bundle (web_dist) not covered by the .py
+# sed above. Rewrite the visible "Hermes Agent" literals in the built JS/HTML/CSS
+# plus residual Nous Research branding (footer org labels, "Nous Portal" nav,
+# "Nous-approved" help text, "Nous Blue" theme) to Jarvis. All mixed-case display
+# strings; technical identifiers are case-distinct (@nous-research/ui package,
+# NOUS_ env prefix, nous-blue theme id, *.nousresearch.com URLs) so the
+# case-sensitive sed leaves them untouched.
+#   - Wordmark: JSX renders "Hermes"<br/>"Agent" as two tokens; the [A-Za-z_$]*
+#     matches the minified jsx-import var so the rule survives re-minification.
+#     `[{][}]` (not literal `{}`) avoids `find -exec sed … {} +` filename
+#     substitution corrupting the regex.
+#   - Version label `children:"Hermes"}` (distinct from the wordmark `["Hermes"`).
+#   - Theme name "Hermes Teal" (theme ids are lowercase, untouched).
+RUN set -e; \
+    DIST=/opt/hermes/hermes_cli/web_dist; \
+    if [ -d "$DIST" ]; then \
+        find "$DIST" -type f \( -name '*.js' -o -name '*.html' -o -name '*.css' \) \
+            -exec sed -i \
+                -e 's/Hermes Agent/Jarvis/g' \
+                -e 's/Nous Research/Jarvis/g' \
+                -e 's/Nous Portal/Jarvis Portal/g' \
+                -e 's/Nous-approved/Jarvis-approved/g' \
+                -e 's/Nous Blue/Jarvis Blue/g' \
+                -e 's/Nous-blue/Jarvis-blue/g' \
+                -e 's/\["Hermes",[A-Za-z_$]*\.jsx("br",[{][}]),"Agent"\]/["Jarvis"]/g' \
+                -e 's/children:"Hermes"}/children:"Jarvis"}/g' \
+                -e 's/Hermes Teal/Jarvis Teal/g' {} +; \
+    fi
 
 # Keep /opt/hermes immutable for the runtime hermes user. Hosted/container
 # instances must not be able to self-edit the installed source or venv; user
