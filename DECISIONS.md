@@ -14,6 +14,25 @@
 
 ---
 
+## 2026-06-23 — Instance Scaleway `jarvis-prod` provisionnée (Phase 0)
+
+**Contexte** : exécution du provisioning serveur (Phase 0, décision « Scaleway dédié » du même jour). Choix de type, zone, stockage à figer.
+
+**Décision**
+- Instance **`jarvis-prod`** créée (live, payante) : type **STANDARD3-X4C-16G** (4 vCPU dédiés, 16 Go — identique au box Alfred, dimensionnement validé pour ollama embeddings Honcho), **Block Storage 5K 100 Go**, **Ubuntu 24.04 LTS**, IPv4 `51.15.106.239` + IPv6. Projet Scaleway `bienpreter-ai` (org After Infinity), même projet qu'Alfred. Facturation horaire (~131 €/mo HT si 24/7, arrêtable).
+- **Zone = `nl-ams-1` (Amsterdam)** car **PAR (Paris) et MIL en rupture de stock** sur ce type. ⚠️ **Données hébergées aux Pays-Bas** — UE/RGPD OK, mais **pas en France**. À réévaluer (migration PAR) si une contrainte de localisation FR apparaît pour un CEO en secteur régulé.
+- **Clé SSH dédiée `jarvis_prod`** (ed25519, sans passphrase) ajoutée aux clés projet Scaleway → injectée dans toute instance future. Séparée des clés Alfred (isolation des accès).
+
+**Alternatives écartées**
+- Zones PAR/MIL : indisponibles à la création (rupture stock) — d'où le repli NL.
+- Réutiliser une clé SSH Alfred : écarté pour isoler les accès Jarvis (clé dédiée révocable indépendamment).
+
+**Impact** : Phase 0 entamée. **Blocage immédiat** : `jarvis-prod` créée AVANT l'ajout de la clé projet → son `authorized_keys` n'a que les clés Alfred, pas `jarvis_prod`. Injection = **étape interactive** (passphrase sur `alfred_par1`, key trusted) — non réalisable via tooling non-interactif (probe BatchMode confirmé : `Permission denied`). À faire par l'owner en terminal. Ensuite : durcissement OS + Docker + DNS/Caddy/TLS, puis Phase 1 (build on-box).
+
+**Statut** : actif
+
+---
+
 ## 2026-06-23 — Port technique Alfred : Dockerfile maintenant, sync/runbooks différés
 
 **Contexte** : après création du fork (PR #1 mergée), exécuter le port de la *technique* d'Alfred (cf. décision « fork upstream » du même jour). Quoi porter, quand.

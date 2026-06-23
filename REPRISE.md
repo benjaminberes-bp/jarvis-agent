@@ -10,8 +10,26 @@
 
 Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur **Hermes** (build on-box, rebrand au build) + **Honcho** self-hosted (mémoire) + **Slack** (natif) + **WhatsApp** (bridge Baileys natif) + UI **hermes-webui** (nesquena, purpose-built pour ce moteur).
 
-## 🆕 Dernière session (2026-06-23) — setup repo + port Dockerfile
+## 🆕 Dernière session (2026-06-23) — PROVISIONING Scaleway (Phase 0 entamée)
 
+### 🖥️ Instance `jarvis-prod` CRÉÉE (Scaleway, payante, live)
+- **IPv4 `51.15.106.239`** · IPv6 `2001:bc8:1640:79f8:dc00:ff:fe6b:ab8f` · DNS `a9ed5871-a979-4cc2-be88-1d04d00b4f90.pub.instances.scw.cloud`
+- ID `a9ed5871-a979-4cc2-be88-1d04d00b4f90` · type **STANDARD3-X4C-16G** (4 vCPU dédiés, 16 Go, = Alfred) · zone **nl-ams-1 (Amsterdam)** ⚠️ (PAR/MIL en rupture de stock) · OS **Ubuntu 24.04 LTS** · disque **Block Storage 5K 100 Go** · IPv4+IPv6 publiques · ~**131 €/mo HT** (€0,1797/h, horaire → arrêtable).
+- Projet Scaleway `bienpreter-ai` (org After Infinity), même projet qu'Alfred. ⚠️ **Données en NL** (UE/RGPD OK), pas en France.
+- Reste Phase 0 : durcissement OS de base + install Docker + DNS/Caddy/TLS (item 2).
+
+### 🔑 Clé SSH dédiée `jarvis_prod`
+- Locale (AKUMABen) : `~/.ssh/jarvis_prod` (ed25519, **sans passphrase**, fp `SHA256:gTUbtyjXMjf5f18ArryQH8ZxiDYOMl7/e5m7vql4soc`, perms 600). Alias `~/.ssh/config` → **`ssh jarvis-prod`**.
+- Pubkey ajoutée aux **clés projet Scaleway** (`jarvis-prod`, ID `6becf07d-a498-497d-8cf2-0783db7bffa7`) → injectée dans toute FUTURE instance.
+- 🚨 **À FAIRE EN PREMIER — injecter la clé sur l'instance existante** : `jarvis-prod` a été créée AVANT l'ajout de la clé projet → son `authorized_keys` n'a que les 3 clés alfred, **pas** `jarvis_prod`. Étape **interactive unique** (passphrase, donc terminal interactif — pas le Bash non-interactif) :
+  ```bash
+  ssh -i ~/.ssh/alfred_par1 root@51.15.106.239 \
+    "install -d -m700 ~/.ssh && echo '$(cat ~/.ssh/jarvis_prod.pub)' >> ~/.ssh/authorized_keys && sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys"
+  ```
+  `alfred_par1` = clé trusted `alfred-par1-akumaben`. Après ça : `ssh jarvis-prod` marche sans passphrase. ⚠️ `chmod 600 ~/.ssh/alfred_par1` si « UNPROTECTED PRIVATE KEY ».
+  > 🔎 Probe 2026-06-23 (BatchMode, depuis AKUMABen) : `jarvis_prod` → `Permission denied` (pas encore injectée, attendu) ; `alfred_par1` → `Permission denied` en BatchMode = **clé à passphrase**, donc injection **non automatisable** (terminal interactif requis pour saisir la passphrase). À exécuter par l'owner.
+
+### Session repo (même jour, antérieure) — setup repo + port Dockerfile
 - ✅ **Fork** `nousresearch/hermes-agent` → `benjaminberes-bp/jarvis-agent` + clone dans `claude-projects/jarvis-agent/`. `upstream` câblé pour re-merge.
 - ✅ **6 docs suivi greffés** (aucun fichier upstream écrasé — vérifié). **PR #1 mergée** vers `main`.
 - ✅ **Dockerfile : bake Honcho** (branche `feat/port-alfred-technique`, **PR #2**) : `--extra honcho` ajouté. **Rebrand sed ÉCARTÉ** (≠ Alfred) — Jarvis UI = hermes-webui pas le dashboard baked, identité par `SOUL.md` custom. Dockerfile diverge d'upstream d'1 ligne. ⚠️ **Build non testé** (pas de serveur).
@@ -24,7 +42,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 ## Prochaines actions (roadmap locale — Notion non câblé)
 
 ### Phase 0 — Provisioning & infra serveur
-1. **[Critique/Medium]** Créer l'instance Scaleway (≥16 Go RAM / ≥80 Go disque), OS + Docker, durcissement de base.
+1. ✅ **Instance `jarvis-prod` créée** (STANDARD3-X4C-16G, 100 Go, Ubuntu 24.04, nl-ams-1, IPv4 `51.15.106.239`) + clé SSH dédiée `jarvis_prod`. 🚨 **Reste : injecter la clé sur l'instance** (cf. bloc « Clé SSH dédiée » ci-dessus) + durcissement OS + install Docker.
 2. **[Critique/Small]** DNS + domaine (sous-domaine type `jarvis.…`) + Caddy/TLS.
 
 ### Phase 1 — Moteur Hermes + Honcho (dép. Phase 0)

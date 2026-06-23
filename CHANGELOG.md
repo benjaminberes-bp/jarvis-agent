@@ -13,11 +13,12 @@ Fork sans cycle de release → **jalons datés, pas de tags SemVer**.
 - **2026-06-23** — Estimation initiale du chantier : ~4,5–8 j-ingé + ~30–80 €/mo infra Scaleway. Roadmap locale en 5 phases dans `REPRISE.md` (Notion non câblé).
 
 - **2026-06-23** — Décisions complémentaires actées : auth UI **native hermes-webui** (pas de magic-link) ; repo = **fork neuf de `nousresearch/hermes-agent`** (pas clone d'Alfred) ; onboarding **voie B** (interview par Jarvis → analyse transcript hors-serveur). Question set d'onboarding rédigé : `docs/onboarding-ceo.md`.
-- **2026-06-23** — **Setup repo exécuté** : fork `nousresearch/hermes-agent` → `benjaminberes-bp/jarvis-agent` (origin + `upstream` pour re-merge), cloné dans `claude-projects/jarvis-agent/`. Docs de suivi greffés (aucun fichier upstream écrasé). **PR #1** mergée vers `main`. **Dir projet = désormais `claude-projects/jarvis-agent/`** (l'ancien `jarvis/` vide).
+- **2026-06-23** — **Setup repo exécuté** : fork `nousresearch/hermes-agent` → `benjaminberes-bp/jarvis-agent` (origin + `upstream` pour re-merge), cloné dans `claude-projects/jarvis-agent/`. Docs de suivi greffés (aucun fichier upstream écrasé). **PR #1** mergée vers `main`. **Dir projet = désormais `claude-projects/jarvis-agent/`** (l'ancien `jarvis/` vide, supprimé).
+- **2026-06-23** — **Instance Scaleway `jarvis-prod` provisionnée** (Phase 0) : STANDARD3-X4C-16G (4 vCPU dédiés, 16 Go), Ubuntu 24.04 LTS, Block Storage 100 Go, zone **nl-ams-1 (Amsterdam)** (PAR/MIL en rupture), IPv4 `51.15.106.239`, ~131 €/mo HT. Clé SSH dédiée **`jarvis_prod`** (ed25519 sans passphrase, ajoutée aux clés projet Scaleway + alias `ssh jarvis-prod`). 🚨 Reste : injecter la clé sur l'instance (créée avant l'ajout) — cf. `REPRISE.md`.
 
 ### Changed
 - **2026-06-23** — **Dockerfile : bake Honcho** (branche `feat/port-alfred-technique`, PR #2). `--extra honcho` ajouté à `uv sync` (sinon perdu au recreate). **Rebrand au build Hermes→Jarvis ÉCARTÉ** (≠ Alfred) : Jarvis sert l'UI via hermes-webui (pas le dashboard baked) → sed `web_dist` inutile ; libellés `.py` = CLI non vus ; identité chat = `SOUL.md` custom (écrase `default_soul.py`). Dockerfile diverge d'upstream d'**1 ligne** → merges quasi-triviaux. CLIs/MCP marketing non portés. Build non testé (pas de serveur).
 
 ### À venir
-- `scripts/sync-from-box.sh` + runbooks `deploy/` recreate/rollback : **différés** à Phase 0/4 (dépendent des params serveur Scaleway non encore provisionné).
-- Phase 0 — Provisioning Scaleway (instance, Docker, DNS, TLS).
+- `scripts/sync-from-box.sh` + runbooks `deploy/` recreate/rollback : **différés** à Phase 0/4 (params serveur désormais connus — IP `51.15.106.239`).
+- Phase 0 (reste) — injecter clé `jarvis_prod` sur l'instance, durcissement OS, install Docker, DNS + Caddy/TLS.
