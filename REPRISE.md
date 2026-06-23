@@ -10,7 +10,11 @@
 
 Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur **Hermes** (build on-box, rebrand au build) + **Honcho** self-hosted (mémoire) + **Slack** (natif) + **WhatsApp** (bridge Baileys natif) + UI **hermes-webui** (nesquena, purpose-built pour ce moteur).
 
-## 🆕 Dernière session (2026-06-23) — PROVISIONING Scaleway (Phase 0 entamée)
+## 🆕 Dernière session (2026-06-23) — PHASE 0 BOUCLÉE (provisioning + accès + durcissement + Docker)
+
+> ✅ Instance live, accès SSH stable (reboot-proof via `instance_keys`), OS durci (ufw+fail2ban+swap+MAJ), Docker CE 29.6.0 installé. DNS/TLS différé Phase 2 (domaine = sous-domaine `bienpreter.com`). **Prochain = Phase 1 : build image Hermes ON-BOX.**
+> ⚠️ Incident résolu cette session : injection clé manuelle dans `authorized_keys` wipée par `scw-fetch` (gotcha Scaleway) → lockout récupéré via `alfred_par1`, fix durable = `instance_keys`. Cf. DECISIONS + mémoire `scaleway-ssh-instance-keys`.
+
 
 ### 🖥️ Instance `jarvis-prod` CRÉÉE (Scaleway, payante, live)
 - **IPv4 `51.15.106.239`** · IPv6 `2001:bc8:1640:79f8:dc00:ff:fe6b:ab8f` · DNS `a9ed5871-a979-4cc2-be88-1d04d00b4f90.pub.instances.scw.cloud`
@@ -38,7 +42,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 
 ### Phase 0 — Provisioning & infra serveur
 1. ✅ **Instance créée + accès SSH stable/reboot-proof** (via `instance_keys`) + ✅ **durcissement** : `apt upgrade` (78 MAJ), **swap 4Gi** (swappiness=10), **ufw actif** (22/80/443, deny incoming par défaut), **fail2ban actif** (jail sshd, bantime 1h/maxretry 5), sshd key-only + ✅ **Docker installé** (CE 29.6.0 + Compose v5.1.4, smoke `hello-world` OK, service enabled). ⚠️ **Gotcha à gérer Phase 2** : Docker bypass ufw (ports `-p` contournent ufw) → publier en `127.0.0.1:` derrière Caddy, ou `ufw-docker`.
-2. **[Critique/Small]** DNS + domaine (sous-domaine type `jarvis.…`) + Caddy/TLS. **← seul reste de Phase 0. Bloque sur : choix du domaine.**
+2. ⏭️ **DNS + Caddy/TLS — DIFFÉRÉ à Phase 2** (requis seulement à l'expo publique de la webui). Domaine décidé : **sous-domaine `bienpreter.com`** (ex. `jarvis.bienpreter.com`) → A record vers `51.15.106.239` le moment venu. Accès d'ici là = SSH. ✅ **Phase 0 considérée CLOSE.**
 
 ### Phase 1 — Moteur Hermes + Honcho (dép. Phase 0)
 3. ✅ **Fork + remote** (PR #1) + ✅ **Dockerfile : bake Honcho** (PR #2, `--extra honcho` ; rebrand sed écarté → identité par `SOUL.md`). **Build non testé** (pas de serveur) → à valider au 1er build on-box (item 4).
@@ -92,9 +96,15 @@ Choix actés : Scaleway dédié, single-user, rebrand au build, UI=hermes-webui 
 WhatsApp=Baileys (numéro dédié jetable), Slack natif, Honcho self-hosted, onboarding voie B.
 Estimation ~4,5–8 j-ingé, ~30–80 €/mo.
 
-PROCHAINE ÉTAPE : Dockerfile porté (PR #2 : honcho + rebrand). RESTE = Phase 0 provisionner
-Scaleway, PUIS build on-box (valide le Dockerfile non testé), PUIS adapter sync-from-box.sh +
-runbooks deploy/ (différés — besoin des params serveur).
+ÉTAT : ✅ PHASE 0 CLOSE. Instance jarvis-prod live (51.15.106.239), accès `ssh jarvis-prod`
+stable/reboot-proof (clé dans /root/.ssh/instance_keys — NE PAS éditer authorized_keys, scw-fetch
+le wipe), OS durci (ufw 22/80/443 + fail2ban + swap 4Gi), Docker CE 29.6.0 + Compose v5.1.4.
+DNS/TLS différé Phase 2 (domaine prévu = sous-domaine bienpreter.com).
+
+PROCHAINE ÉTAPE : Phase 1 — build image Hermes ON-BOX (valide le Dockerfile non testé de la PR #2 :
+bake Honcho). Cloner le repo sur le serveur, build (gotchas : CRLF/s6, prune disque), premier boot,
+config.yaml (display: {}). PUIS Honcho self-hosted (pgvector+redis+ollama+haiku). PR #2 laissée
+ouverte jusqu'à ce build (le valide avant merge).
 Décisions ouvertes : usage CEO précis (→ interview onboarding), voie A vs B définitif.
 Savoir-faire infra éprouvé = DECISIONS.md d'Alfred (../hermes-agent/alfred-agent/).
 ```
