@@ -62,6 +62,20 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 11. **[Medium/Medium]** Script de sync serveur→repo (adapter `sync-from-box.sh` d'Alfred).
 12. **[Medium/Small]** Runbooks recreate/rollback + smoke tests + vérif MCP.
 
+## 🎯 Kickoff Phase 1 (prochaine session) — build Hermes ON-BOX
+
+**Pré-requis OK** : `ssh jarvis-prod` (root, stable), Docker CE 29.6.0 + Compose v5.1.4, 83G libres.
+
+Étapes pressenties (valider/adapter sur la procédure éprouvée d'Alfred = `../hermes-agent/alfred-agent/DECISIONS.md` + son `Dockerfile`/`deploy/`) :
+1. **Amener le code sur le serveur** : cloner `benjaminberes-bp/jarvis-agent` sur la box (`git clone` depuis le serveur — PAS de git en prod côté data, mais le repo build oui), branche `feat/port-alfred-technique` (porte le Dockerfile bake-Honcho). ⚠️ Régler le **CRLF** (`.gitattributes`/`git config core.autocrlf input`) sinon s6 casse au boot.
+2. **`docker build`** de l'image (gotcha hérité : build natif on-box obligatoire, JAMAIS sous Windows ; prune disque si besoin). Valide le Dockerfile non testé (`--extra honcho`).
+3. **Premier boot** du conteneur + **`config.yaml`** : éditer le fichier **directement** (PAS `hermes config set` — lossy) ; `display: {}` (jamais `null`) ; data = **volume Docker** (pas de bind git).
+4. **Rédiger `SOUL.md` Jarvis** (persona CEO Michael) → écrase le défaut `default_soul.py` « Hermes Agent ».
+5. Si build OK → **merger PR #2** (le build la valide).
+6. Enchaîner **Honcho self-hosted** (item 5 : pgvector+redis+ollama embeddings + haiku ; wire `memory.provider` dans `config.yaml`).
+
+**Rappels durs** : ne **jamais** éditer `~/.ssh/authorized_keys` (scw-fetch le wipe → cf. mémoire `scaleway-ssh-instance-keys`) ; Docker bypass ufw → publier en `127.0.0.1:` ; commits PR-based, jamais sur `main`.
+
 ## Décisions tranchées (2026-06-23)
 - ✅ **Auth UI** : **native hermes-webui** (`HERMES_WEBUI_PASSWORD` ou WebAuthn/passkeys). Pas de magic-link (sur-ingénierie pour 1 user). Durcir si exposition publique.
 - ✅ **Repo** : **fork neuf de `nousresearch/hermes-agent` → `benjaminberes-bp/jarvis-agent`** (PAS clone d'Alfred — marketing baggage). **Remote créé, PR #1 ouverte.** Porter d'Alfred la *technique* : sed rebrand + bake Honcho du Dockerfile, runbooks `deploy/`, `scripts/sync-from-box.sh`.
