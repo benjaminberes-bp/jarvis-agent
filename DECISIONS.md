@@ -14,7 +14,22 @@
 
 ---
 
-## 2026-06-23 — Phase 1 item 5 (a) : kit de déploiement Honcho porté d'Alfred (deploy on-box gaté)
+## 2026-06-23 — Phase 1 item 5 : Honcho self-hosted DÉPLOYÉ + wired (mémoire opérationnelle)
+
+**MAJ deploy (même jour)** : le kit (ci-dessous) a été **déployé de bout en bout** sur `jarvis-prod` avec aval owner.
+- `/opt/honcho-stack` (clone honcho officiel) + artefacts montés. `docker network honcho-net` créé.
+- Services up : `ollama` (modèle `nomic-embed-text` 274 Mo pull), `database` (pgvector, healthy), `redis` (healthy), `api` (healthy, `/health`=ok), `deriver` (boucle OK).
+- **Clé Anthropic récupérée du serveur Alfred** (`alfred-auto:/opt/honcho-stack/.env`), transférée **en pipe serveur→serveur** (jamais en clair) dans `jarvis-prod:/opt/honcho-stack/.env`.
+- **Embeddings 768** : `alembic upgrade head` puis `configure_embeddings.py --yes` (ALTER vector→768, HNSW recréés) AVANT up api (sinon dimension mismatch 1536).
+- **Wire jarvis** : conteneur `jarvis` attaché à `honcho-net` (joint `honcho-api:8000` OK), skill `autonomous-ai-agents/honcho` installé, `honcho.json` (`baseUrl=http://honcho-api:8000`, `workspace=jarvis`, AUTH off), `config.yaml memory.provider: honcho` (édition DIRECTE ligne 422, backup pris — PAS `hermes config set`), reload `s6-svc -r main-hermes`.
+- **Smoke** : `hermes honcho status` → **OK** (connection établie, workspace jarvis, "no peer data yet" = normal, 0 conversation).
+- ⚠️ **Clé LLM du moteur jarvis lui-même** (≠ Honcho) : owner a tranché **réutiliser la clé Alfred** → stagée dans `jarvis-prod:/opt/data/.env` (`ANTHROPIC_API_KEY`, 600 hermes). **Effective seulement au recreate du conteneur** (Alfred lit les secrets en env conteneur via `os.getenv`, source = `--env-file /opt/data/.env`). Recreate différé pour le grouper avec le wire Slack (un seul recreate).
+
+**Statut** : actif — **item 5 CLOS** (mémoire opérationnelle).
+
+---
+
+## 2026-06-23 — Phase 1 item 5 (a) : kit de déploiement Honcho porté d'Alfred
 
 **Contexte** : item 5 = Honcho self-hosted. Alfred porte une recette **éprouvée en prod** (`docker/honcho/` : `config.toml` + `docker-compose.override.yml` + `honcho.env.example` + `README.md`) — absente d'upstream et de jarvis. « Porter la technique d'Alfred » (CLAUDE.md) = rapatrier ce kit.
 
