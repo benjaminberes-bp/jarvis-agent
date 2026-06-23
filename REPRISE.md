@@ -14,8 +14,9 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 
 - ✅ **Fork** `nousresearch/hermes-agent` → `benjaminberes-bp/jarvis-agent` + clone dans `claude-projects/jarvis-agent/`. `upstream` câblé pour re-merge.
 - ✅ **6 docs suivi greffés** (aucun fichier upstream écrasé — vérifié). **PR #1 mergée** vers `main`.
-- ✅ **Dockerfile porté d'Alfred** (branche `feat/port-alfred-technique`, **PR #2**) : `--extra honcho` baké + rebrand `sed` Hermes→Jarvis (`*.py` + `web_dist`, display strings only, avant le lock immutable). CLIs marketing non portés. ⚠️ **Build non testé** (pas de serveur).
+- ✅ **Dockerfile : bake Honcho** (branche `feat/port-alfred-technique`, **PR #2**) : `--extra honcho` ajouté. **Rebrand sed ÉCARTÉ** (≠ Alfred) — Jarvis UI = hermes-webui pas le dashboard baked, identité par `SOUL.md` custom. Dockerfile diverge d'upstream d'1 ligne. ⚠️ **Build non testé** (pas de serveur).
 - ⏭️ Sync-from-box.sh + runbooks `deploy/` **différés** (besoin params serveur Scaleway).
+- 📌 **À faire onboarding** : rédiger un `SOUL.md` Jarvis (persona CEO) → écrase `default_soul.py` « Hermes Agent ».
 
 ### Session précédente (2026-06-23) — bootstrap
 - 📁 Docs de suivi rédigés + choix d'archi actés (cf. `DECISIONS.md`) : Scaleway dédié, single-user, rebrand au build, **UI=hermes-webui** (purpose-built Hermes, zéro glue), **WhatsApp=Baileys** (numéro dédié jetable obligatoire), Slack natif, Honcho self-hosted. Estimation ~4,5–8 j-ingé + ~30–80 €/mo.
@@ -27,7 +28,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 2. **[Critique/Small]** DNS + domaine (sous-domaine type `jarvis.…`) + Caddy/TLS.
 
 ### Phase 1 — Moteur Hermes + Honcho (dép. Phase 0)
-3. ✅ **Fork + remote** (PR #1) + ✅ **Dockerfile porté** (PR #2 : `--extra honcho` + rebrand sed Hermes→Jarvis py/web_dist). **Build non testé** (pas de serveur) → à valider au 1er build on-box (item 4).
+3. ✅ **Fork + remote** (PR #1) + ✅ **Dockerfile : bake Honcho** (PR #2, `--extra honcho` ; rebrand sed écarté → identité par `SOUL.md`). **Build non testé** (pas de serveur) → à valider au 1er build on-box (item 4).
 4. **[Critique/Medium]** Build image **SUR LE SERVEUR** (gotchas : CRLF/s6, prune disque) + premier boot + `config.yaml` (`display: {}`).
 5. **[High/Large]** Honcho self-hosted (pgvector+redis+ollama embeddings + haiku) + wire `memory.provider`.
 

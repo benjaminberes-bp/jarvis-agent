@@ -19,14 +19,16 @@
 **Contexte** : après création du fork (PR #1 mergée), exécuter le port de la *technique* d'Alfred (cf. décision « fork upstream » du même jour). Quoi porter, quand.
 
 **Décision**
-- **Dockerfile porté immédiatement** (branche `feat/port-alfred-technique`, PR #2) : (1) **bake Honcho** = `--extra honcho` ajouté à la ligne `uv sync` (sinon perdu à chaque recreate — le venv vit dans l'image, pas le volume `/opt/data`) ; (2) **rebrand au build** Hermes→Jarvis (blocs `sed` sur `*.py` + `web_dist`, display strings only), inséré **avant** le lock `chmod a-w /opt/hermes`. Pattern copié verbatim du fork Alfred (prouvé). **PAS porté** : CLIs/MCP marketing d'Alfred (Higgsfield, Meta Ads, Meta social, Notion MCP), backdrop custom — baggage non pertinent pour un assistant single-user CEO.
-- **`scripts/sync-from-box.sh` + `deploy/` (runbooks recreate/rollback) = DIFFÉRÉS** à Phase 0/4. Raison : fortement paramétrés serveur (volume `alfred-data`, alias SSH `alfred-deploy`, nom conteneur) — ces valeurs Jarvis **n'existent pas encore** (Scaleway non provisionné). Les porter maintenant = placeholders prématurés. À adapter quand le serveur existe.
+- **Dockerfile porté immédiatement** (branche `feat/port-alfred-technique`, PR #2) : **bake Honcho uniquement** = `--extra honcho` ajouté à la ligne `uv sync` (sinon perdu à chaque recreate — le venv vit dans l'image, pas le volume `/opt/data`). **PAS porté** : CLIs/MCP marketing d'Alfred (Higgsfield, Meta Ads, Meta social, Notion MCP), backdrop custom.
+- **Rebrand au build Hermes→Jarvis : ÉCARTÉ** (≠ Alfred). Le rebrand d'Alfred (sed `*.py` + `web_dist`) se justifiait car **Alfred utilise le dashboard baked comme UI**. Jarvis sert l'UI via **hermes-webui** (`:8787`) → le sed `web_dist` viserait la mauvaise UI (mort). Les libellés `.py` restants = CLI/banner/docstring/service-desc que l'utilisateur (Slack/WhatsApp/webui) ne voit jamais. La seule string chat-facing — `default_soul.py` « You are Hermes Agent… » — n'est qu'un **DÉFAUT** seedé dans `$HERMES_HOME/SOUL.md` *s'il est absent* (`config.py:824`) → **écrasé par un `SOUL.md` custom Jarvis** (défini à l'onboarding). **Identité = SOUL.md + titre hermes-webui, pas sed.**
+- **`scripts/sync-from-box.sh` + `deploy/` (runbooks recreate/rollback) = DIFFÉRÉS** à Phase 0/4. Raison : fortement paramétrés serveur (volume `alfred-data`, alias SSH `alfred-deploy`, nom conteneur) — ces valeurs Jarvis **n'existent pas encore** (Scaleway non provisionné). À adapter quand le serveur existe.
 
 **Alternatives écartées**
-- Porter `deploy/` + sync wholesale maintenant : amène le contenu marketing (crons emprunteurs, memories-seed) + params serveur inexistants.
-- Lean extras (drop `messaging`/`matrix`/`hindsight` comme Alfred) : écarté pour minimiser le diff vs upstream non-testable hors-serveur ; `messaging` inclut déjà slack+qrcode. Optimisation image repoussée au 1er build serveur.
+- **Rebrand sed (l'approche Alfred)** : écarté — surface mauvaise UI (web_dist) + libellés CLI non vus + fragile (no-op silencieux si upstream change strings/re-minifie) + **+60 lignes de divergence Dockerfile** = conflits de merge récurrents pour un payoff nul. Identité gérée proprement par SOUL.md.
+- Porter `deploy/` + sync wholesale maintenant : amène le contenu marketing + params serveur inexistants.
+- Lean extras (drop `messaging`/`matrix`/`hindsight`) : écarté pour minimiser le diff vs upstream non-testable hors-serveur ; `messaging` inclut déjà slack+qrcode.
 
-**Impact** : `Dockerfile` Jarvis diverge d'upstream sur 2 points (honcho + rebrand) — divergence assumée (le Dockerfile porte l'identité du fork). Build **non testé** (pas de serveur) → validé au 1er build on-box (Phase 1 item 4). PR #2 à review par l'owner.
+**Impact** : `Dockerfile` Jarvis diverge d'upstream sur **1 seule ligne** (`--extra honcho`) → `git merge upstream/main` quasi-trivial. À FAIRE en aval : rédiger un `SOUL.md` Jarvis (persona CEO) lors de l'onboarding voie B. Build **non testé** (pas de serveur) → validé au 1er build on-box (Phase 1 item 4).
 
 **Statut** : actif
 

@@ -16,7 +16,7 @@ Fork sans cycle de release → **jalons datés, pas de tags SemVer**.
 - **2026-06-23** — **Setup repo exécuté** : fork `nousresearch/hermes-agent` → `benjaminberes-bp/jarvis-agent` (origin + `upstream` pour re-merge), cloné dans `claude-projects/jarvis-agent/`. Docs de suivi greffés (aucun fichier upstream écrasé). **PR #1** mergée vers `main`. **Dir projet = désormais `claude-projects/jarvis-agent/`** (l'ancien `jarvis/` vide).
 
 ### Changed
-- **2026-06-23** — **Dockerfile : port technique Alfred** (branche `feat/port-alfred-technique`, PR #2). Bake Honcho (`--extra honcho` sur `uv sync`) + rebrand au build Hermes→Jarvis (`sed` sur `*.py` + `web_dist`, display strings only, avant le lock immutable). CLIs/MCP marketing d'Alfred non portés. Build non testé (pas de serveur) → validé au 1er build on-box.
+- **2026-06-23** — **Dockerfile : bake Honcho** (branche `feat/port-alfred-technique`, PR #2). `--extra honcho` ajouté à `uv sync` (sinon perdu au recreate). **Rebrand au build Hermes→Jarvis ÉCARTÉ** (≠ Alfred) : Jarvis sert l'UI via hermes-webui (pas le dashboard baked) → sed `web_dist` inutile ; libellés `.py` = CLI non vus ; identité chat = `SOUL.md` custom (écrase `default_soul.py`). Dockerfile diverge d'upstream d'**1 ligne** → merges quasi-triviaux. CLIs/MCP marketing non portés. Build non testé (pas de serveur).
 
 ### À venir
 - `scripts/sync-from-box.sh` + runbooks `deploy/` recreate/rollback : **différés** à Phase 0/4 (dépendent des params serveur Scaleway non encore provisionné).
