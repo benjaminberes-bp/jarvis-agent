@@ -37,8 +37,8 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 ## Prochaines actions (roadmap locale — Notion non câblé)
 
 ### Phase 0 — Provisioning & infra serveur
-1. ✅ **Instance `jarvis-prod` créée** + ✅ **accès SSH `jarvis_prod` stable/reboot-proof** (via `instance_keys`, cf. bloc clé SSH) + ✅ **durcissement étape A** : `apt upgrade` (78 MAJ), **swap 4Gi** (vm.swappiness=10), `ufw` + `fail2ban` installés. sshd déjà key-only. **Reste item 1** : durcissement étape B (activer ufw 22/80/443 + jail fail2ban sshd) + **install Docker**.
-2. **[Critique/Small]** DNS + domaine (sous-domaine type `jarvis.…`) + Caddy/TLS.
+1. ✅ **Instance créée + accès SSH stable/reboot-proof** (via `instance_keys`) + ✅ **durcissement** : `apt upgrade` (78 MAJ), **swap 4Gi** (swappiness=10), **ufw actif** (22/80/443, deny incoming par défaut), **fail2ban actif** (jail sshd, bantime 1h/maxretry 5), sshd key-only + ✅ **Docker installé** (CE 29.6.0 + Compose v5.1.4, smoke `hello-world` OK, service enabled). ⚠️ **Gotcha à gérer Phase 2** : Docker bypass ufw (ports `-p` contournent ufw) → publier en `127.0.0.1:` derrière Caddy, ou `ufw-docker`.
+2. **[Critique/Small]** DNS + domaine (sous-domaine type `jarvis.…`) + Caddy/TLS. **← seul reste de Phase 0. Bloque sur : choix du domaine.**
 
 ### Phase 1 — Moteur Hermes + Honcho (dép. Phase 0)
 3. ✅ **Fork + remote** (PR #1) + ✅ **Dockerfile : bake Honcho** (PR #2, `--extra honcho` ; rebrand sed écarté → identité par `SOUL.md`). **Build non testé** (pas de serveur) → à valider au 1er build on-box (item 4).
