@@ -14,6 +14,27 @@
 
 ---
 
+## 2026-06-23 — Phase 2 item 6 : Slack natif DÉPLOYÉ + validé end-to-end
+
+**Contexte** : 1er canal. Owner a fourni les tokens Slack (app jarvis, workspace promup.slack.com / team T01AXTJLEN9) + tranché « réutiliser la clé Alfred » pour le moteur LLM.
+
+**Décision / résultat** :
+- **Tokens en env conteneur** (mécanisme Alfred : gateway lit `os.getenv`) via `--env-file /opt/data/.env` (600 hermes, jamais commit) : `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_ALLOWED_USERS`, `ANTHROPIC_API_KEY`. ⚠️ `--env-file` lit côté **hôte** → chemin = mountpoint volume (`/var/lib/docker/volumes/jarvis-data/_data/.env`), pas `/opt/data`.
+- **Allowlist stricte** : `SLACK_ALLOWED_USERS=U08JAMRR1T3,U01AU8P3BT8` (Benjamin BERES + Michaël MARTIN ; IDs résolus via Slack). Slack = Socket Mode (`connections:write`) → **aucun port inbound**.
+- **Recreate conteneur `jarvis`** (UN seul, groupe Anthropic + Slack) calqué sur Alfred : `docker run -d --name jarvis --restart unless-stopped --env-file <vol>/.env -v jarvis-data:/opt/data jarvis:latest **gateway run**` puis **`docker network connect honcho-net jarvis`** (réseau perdu au recreate — réattacher). Le `sleep infinity` du smoke item 4 est abandonné → boot prod réel (CMD `gateway run`).
+- **Plateforme auto-activée** depuis la présence de `SLACK_BOT_TOKEN` (`gateway/config.py _apply_env_overrides`) — pas de config d'activation manuelle. Log : `Authenticated as @jarvis`, `Socket Mode connected`, `✓ slack connected`.
+- **Smoke end-to-end validé** : DM de Benjamin (allowlisté) → inbound reçu → session Honcho créée (write mémoire OK) → turn `provider=anthropic model=claude-opus-4-6` → réponse livrée sur Slack (« déploiement validé ✅ »). Valide en une passe : Socket Mode + allowlist + clé LLM + write Honcho + delivery.
+
+**Points ouverts (tuning, non bloquant)** :
+- **Persona = défaut « Hermes Agent »** (SOUL.md pas encore custom) → rebrand identité Jarvis à l'onboarding Phase 3.
+- **Modèle défaut `claude-opus-4-6`** (cher) — à arbitrer (haiku/sonnet pour le quotidien ?).
+- **Providers auxiliaires `openrouter`/`nous`** sans crédit → warnings dans les logs (fallback anthropic OK) ; à désactiver dans `config.yaml` pour nettoyer.
+- **Home channel Slack** non défini (`/hermes sethome`) — optionnel (cron/cross-platform delivery).
+
+**Statut** : actif — **item 6 CLOS** (Slack opérationnel).
+
+---
+
 ## 2026-06-23 — Phase 1 item 5 : Honcho self-hosted DÉPLOYÉ + wired (mémoire opérationnelle)
 
 **MAJ deploy (même jour)** : le kit (ci-dessous) a été **déployé de bout en bout** sur `jarvis-prod` avec aval owner.

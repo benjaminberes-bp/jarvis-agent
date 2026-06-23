@@ -10,10 +10,11 @@
 
 Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur **Hermes** (build on-box, rebrand au build) + **Honcho** self-hosted (mémoire) + **Slack** (natif) + **WhatsApp** (bridge Baileys natif) + UI **hermes-webui** (nesquena, purpose-built pour ce moteur).
 
-## 🆕 Dernière session (2026-06-23) — PHASE 1 item 4 : BUILD ON-BOX VALIDÉ + premier boot OK
+## 🆕 Dernière session (2026-06-23) — HONCHO + SLACK LIVE (Phase 1 clôturée, Phase 2 entamée)
 
-> ✅ Image **`jarvis:latest`** buildée nativement sur `jarvis-prod` (exit 0, 5,28 Go), premier boot **clean sous s6** (71 skills, services up). **Smoke OK** : `honcho 2.0.1` importable (✅ valide le bake PR #2), `hermes v0.17.0 · upstream 759ae605` (SHA baké), `config.yaml` seedé (`display:` plein). Volume `jarvis-data` créé. Conteneur `jarvis` tourne (smoke `sleep infinity`). **PR #2 validée → à merger.**
-> **Prochain = Phase 1 item 5 : Honcho self-hosted** (pgvector+redis+ollama+haiku) puis wire `memory.provider`.
+> ✅ **Build on-box validé** (item 4, PR #2 mergée). ✅ **Honcho self-hosted déployé + wired** (item 5) : stack live (ollama 768 + pgvector + redis + api + deriver), clé Anthropic récupérée d'Alfred en pipe serveur→serveur, `memory.provider: honcho`, status OK. ✅ **Slack natif live + validé** (item 6) : app `@jarvis` (promup), allowlist Benjamin+Michaël, Socket Mode ; **smoke DM end-to-end OK** (inbound → write Honcho → réponse anthropic livrée). Conteneur `jarvis` recréé (CMD `gateway run`, `--env-file /opt/data/.env`, honcho-net).
+> **Prochain = Phase 2 reste : WhatsApp Baileys (numéro dédié owner) + hermes-webui.** + tuning léger (SOUL.md, modèle défaut, providers aux).
+> Tokens/secrets dans `jarvis-prod:/opt/data/.env` (600, jamais commit).
 
 ### 🐳 Build & boot (cette session)
 - Repo cloné on-box : **`/opt/jarvis-agent`** (HTTPS, repo public, branche `feat/port-alfred-technique`, HEAD `759ae605`). Scripts s6 en LF (`.gitattributes` + checkout Linux) → pas de casse s6.
@@ -60,7 +61,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 5. ✅ **Honcho self-hosted DÉPLOYÉ + wired**. Kit porté (`docker/honcho/`, PR #3) + **stack live** sur jarvis-prod (ollama 768 + pgvector + redis + api healthy + deriver), clé Anthropic récupérée d'Alfred (pipe serveur→serveur). `config.yaml memory.provider: honcho`, `hermes honcho status` = OK. Clé LLM moteur jarvis stagée dans `/opt/data/.env` (réutilise clé Alfred) → effective au recreate (groupé avec Slack).
 
 ### Phase 2 — Canaux & UI (dép. Phase 1)
-6. **[High/Small]** Slack : app + tokens + connecteur natif.
+6. ✅ **Slack natif DÉPLOYÉ + validé** (workspace promup, app `@jarvis`, allowlist Benjamin+Michaël, Socket Mode). Smoke DM end-to-end OK (inbound → Honcho write → réponse anthropic). Tokens en `/opt/data/.env`.
 7. **[High/Medium]** WhatsApp Baileys : Node + **numéro dédié** + QR pairing + volume session + allowlist. ⚠️ risque ban.
 8. **[High/Medium]** hermes-webui : clone + `bootstrap.py` + wire state.db/config (layout volume) + **auth native** (`HERMES_WEBUI_PASSWORD`/WebAuthn) + route Caddy.
 
@@ -72,24 +73,23 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 11. **[Medium/Medium]** Script de sync serveur→repo (adapter `sync-from-box.sh` d'Alfred).
 12. **[Medium/Small]** Runbooks recreate/rollback + smoke tests + vérif MCP.
 
-## 🎯 Kickoff prochaine session — Phase 2 : Slack (puis WhatsApp, webui)
+## 🎯 Kickoff prochaine session — Phase 2 reste : WhatsApp + hermes-webui
 
-**Pré-requis OK** : `ssh jarvis-prod`, image `jarvis:latest` + conteneur `jarvis` up (volume `jarvis-data`), **Honcho live + wired** (réseau `honcho-net`), clé Anthropic stagée dans `/opt/data/.env`.
+**Pré-requis OK** : `ssh jarvis-prod`, conteneur `jarvis` up (CMD `gateway run`, `--env-file /opt/data/.env`, réseau `honcho-net`), **Honcho live + wired**, **Slack natif live + validé**. Secrets dans `/opt/data/.env` (ANTHROPIC + SLACK_*).
 
-**⏳ BLOQUÉ sur owner — tokens Slack à fournir** :
-- `SLACK_BOT_TOKEN` (`xoxb-…`) — scopes `app_mentions:read,chat:write,im:history,im:write,channels:history,files:read`.
-- `SLACK_APP_TOKEN` (`xapp-…`) — scope `connections:write` (Socket Mode).
-- **Slack user ID** de Michael (`U…`) → `SLACK_ALLOWED_USERS` (allowlist stricte).
+**Tuning à arbitrer (non bloquant, items légers)** :
+- **SOUL.md custom Jarvis** (persona) → écrase « Hermes Agent ». Lié à l'onboarding Phase 3 (usage CEO).
+- **Modèle défaut** `claude-opus-4-6` → trop cher pour le quotidien ? éditer `config.yaml` (haiku/sonnet) directement.
+- **Désactiver providers auxiliaires** `openrouter`/`nous` (sans crédit → warnings logs) dans `config.yaml`.
+- **`/hermes sethome`** Slack si on veut le delivery cron/cross-platform.
 
-**Séquence Slack (dès tokens reçus)** :
-1. Ajouter `SLACK_BOT_TOKEN` + `SLACK_APP_TOKEN` + `SLACK_ALLOWED_USERS` à `jarvis-prod:/opt/data/.env` (600 hermes, jamais commit).
-2. **Recreate conteneur `jarvis`** (UN SEUL recreate, groupe Anthropic+Slack) : `docker rm -f jarvis` puis `docker run -d --name jarvis --restart unless-stopped --env-file /opt/data/.env -v jarvis-data:/opt/data jarvis:latest` **sans `sleep infinity`** (boot prod réel) PUIS `docker network connect honcho-net jarvis` (réseau perdu au recreate — réattacher). Socket Mode = pas de port inbound.
-3. Activer la plateforme Slack (config + gateway) + vérifier le gateway Slack connecté (logs). ⚠️ caveat restart gateway (`s6-svc -r`).
-4. Smoke : mention Slack → réponse (valide moteur LLM + Honcho write).
+**Item 7 — WhatsApp Baileys** (`[High/Medium]`, ⚠️ risque ban) : Node + **numéro dédié jetable** (jamais corp) + QR pairing + **volume session persistant** + allowlist stricte. Bridge API non-officielle → casse possible aux updates WA. BLOQUÉ sur owner = numéro dédié.
 
-**Puis** : WhatsApp Baileys (numéro dédié jetable), hermes-webui (auth native). **Phase 3** : onboarding voie B (interview Michael) → `SOUL.md` + `USER.md`.
+**Item 8 — hermes-webui** (`[High/Medium]`) : clone nesquena/hermes-webui + `bootstrap.py` + wire `state.db`/config (layout volume `/opt/data`) + **auth native** (`HERMES_WEBUI_PASSWORD`) + (DNS/Caddy/TLS Phase 2 si expo publique — sinon SSH tunnel). ⚠️ Docker bypass ufw → publier `127.0.0.1:`.
 
-**Rappels durs** : `authorized_keys` jamais à la main (scw-fetch wipe → mémoire `scaleway-ssh-instance-keys`) ; Docker bypass ufw → `127.0.0.1:` ; `config.yaml` édité **direct** (pas `hermes config set`), `display:` jamais `null` ; secrets en `/opt/data/.env` (600), jamais commit ; commits PR-based, jamais sur `main`. **Recreate jarvis = réattacher `honcho-net`.**
+**Phase 3** : onboarding voie B (interview Michael par Jarvis sur Slack) → analyse hors-serveur → `USER.md` + `SOUL.md` + skills.
+
+**Rappels durs** : `authorized_keys` jamais à la main (scw-fetch wipe → mémoire `scaleway-ssh-instance-keys`) ; Docker bypass ufw → `127.0.0.1:` ; `config.yaml` édité **direct** (pas `hermes config set`), `display:` jamais `null` ; secrets en `/opt/data/.env` (600), jamais commit ; commits PR-based, jamais sur `main`. **Recreate jarvis = CMD `gateway run` + `--env-file <vol>/.env` (chemin HÔTE) + réattacher `honcho-net`.**
 
 ## Décisions tranchées (2026-06-23)
 - ✅ **Auth UI** : **native hermes-webui** (`HERMES_WEBUI_PASSWORD` ou WebAuthn/passkeys). Pas de magic-link (sur-ingénierie pour 1 user). Durcir si exposition publique.
