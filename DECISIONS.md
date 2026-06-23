@@ -14,6 +14,25 @@
 
 ---
 
+## 2026-06-23 — Accès SSH `jarvis_prod` : la clé doit vivre dans `/root/.ssh/instance_keys` (gotcha Scaleway scw-fetch)
+
+**Contexte** : après injection manuelle de la pubkey `jarvis_prod` dans `~/.ssh/authorized_keys`, l'accès a **sauté en pleine session** (durcissement étape A). Diagnostic : `Permission denied (publickey)` alors que perms OK et fail2ban clean.
+
+**Cause** : sur les instances Scaleway, `authorized_keys` est **généré par `scw-fetch-ssh-keys`** (`/usr/sbin/scw-fetch-ssh-keys`), service **oneshot** déclenché au boot **et** par d'autres évènements (ex. `scw-net-reconfig.path`, postinst de paquets pendant `apt upgrade`). Le script **réécrit entièrement** `authorized_keys` depuis : (1) `scw-metadata --cached` (clés SSH **figées dans les métadonnées d'instance à la CRÉATION** — ajouter une clé au **projet** Scaleway *après* création **ne se propage PAS** à l'instance existante, ni au cache ni au metadata live), + (2) `/root/.ssh/instance_keys` (fichier **user-managed**, concaténé tel quel). Toute ligne ajoutée à la main dans `authorized_keys` est donc **effacée** au prochain fetch.
+
+**Décision** : la clé `jarvis_prod` est ajoutée à **`/root/.ssh/instance_keys`** (échappatoire prévue par le script). Vérifié reboot-proof : après `scw-fetch`, jarvis ré-apparaît dans `authorized_keys` sans intervention. La clé a aussi été ajoutée aux **clés projet Scaleway** (ID `007493cd-e5db-471d-9056-80bc227bacf5`) — sans effet sur cette instance, mais utile pour toute instance **re-créée** ensuite.
+
+**Alternatives écartées**
+- **Injection manuelle dans `authorized_keys`** : éphémère (wipée au prochain fetch). C'est ce qui a causé le lockout.
+- **Ajout aux clés projet seules** : ne se propage pas à une instance existante (metadata figé à la création) — vérifié : `scw-fetch` laisse jarvis à 0 même après ajout projet.
+- **`systemctl mask scw-fetch-ssh-keys.service`** : gèlerait `authorized_keys` mais casse la gestion de clés native + non-standard ; `instance_keys` fait le job proprement.
+
+**Impact** : accès `ssh jarvis-prod` stable et reboot-proof. **Recovery de secours** = `alfred_par1` (clé alfred, dans le metadata figé → toujours présente après fetch) + ré-ajout à `instance_keys`. **Règle** : toute nouvelle clé d'accès à cette instance → l'ajouter à `/root/.ssh/instance_keys`, jamais directement à `authorized_keys`.
+
+**Statut** : actif
+
+---
+
 ## 2026-06-23 — Instance Scaleway `jarvis-prod` provisionnée (Phase 0)
 
 **Contexte** : exécution du provisioning serveur (Phase 0, décision « Scaleway dédié » du même jour). Choix de type, zone, stockage à figer.

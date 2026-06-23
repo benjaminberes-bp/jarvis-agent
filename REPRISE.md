@@ -18,16 +18,11 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 - Projet Scaleway `bienpreter-ai` (org After Infinity), même projet qu'Alfred. ⚠️ **Données en NL** (UE/RGPD OK), pas en France.
 - Reste Phase 0 : durcissement OS de base + install Docker + DNS/Caddy/TLS (item 2).
 
-### 🔑 Clé SSH dédiée `jarvis_prod`
-- Locale (AKUMABen) : `~/.ssh/jarvis_prod` (ed25519, **sans passphrase**, fp `SHA256:gTUbtyjXMjf5f18ArryQH8ZxiDYOMl7/e5m7vql4soc`, perms 600). Alias `~/.ssh/config` → **`ssh jarvis-prod`**.
-- Pubkey ajoutée aux **clés projet Scaleway** (`jarvis-prod`, ID `6becf07d-a498-497d-8cf2-0783db7bffa7`) → injectée dans toute FUTURE instance.
-- 🚨 **À FAIRE EN PREMIER — injecter la clé sur l'instance existante** : `jarvis-prod` a été créée AVANT l'ajout de la clé projet → son `authorized_keys` n'a que les 3 clés alfred, **pas** `jarvis_prod`. Étape **interactive unique** (passphrase, donc terminal interactif — pas le Bash non-interactif) :
-  ```bash
-  ssh -i ~/.ssh/alfred_par1 root@51.15.106.239 \
-    "install -d -m700 ~/.ssh && echo '$(cat ~/.ssh/jarvis_prod.pub)' >> ~/.ssh/authorized_keys && sort -u ~/.ssh/authorized_keys -o ~/.ssh/authorized_keys"
-  ```
-  `alfred_par1` = clé trusted `alfred-par1-akumaben`. Après ça : `ssh jarvis-prod` marche sans passphrase. ⚠️ `chmod 600 ~/.ssh/alfred_par1` si « UNPROTECTED PRIVATE KEY ».
-  > 🔎 Probe 2026-06-23 (BatchMode, depuis AKUMABen) : `jarvis_prod` → `Permission denied` (pas encore injectée, attendu) ; `alfred_par1` → `Permission denied` en BatchMode = **clé à passphrase**, donc injection **non automatisable** (terminal interactif requis pour saisir la passphrase). À exécuter par l'owner.
+### 🔑 Clé SSH dédiée `jarvis_prod` — ✅ ACCÈS STABLE (reboot-proof)
+- Locale (AKUMABen) : `~/.ssh/jarvis_prod` (ed25519, **sans passphrase**, fp `SHA256:gTUbtyjXMjf5f18ArryQH8ZxiDYOMl7/e5m7vql4soc`). Alias `~/.ssh/config` → **`ssh jarvis-prod`** marche sans passphrase.
+- ✅ **Clé installée durablement dans `/root/.ssh/instance_keys`** sur l'instance → ré-injectée par `scw-fetch-ssh-keys` à chaque boot. Vérifié reboot-proof.
+- ✅ Pubkey aussi aux **clés projet Scaleway** (`jarvis-prod`, ID `007493cd-e5db-471d-9056-80bc227bacf5`) — sans effet sur CETTE instance (metadata figé à la création) mais utile pour toute instance re-créée.
+- ⚠️ **GOTCHA Scaleway** (cf. DECISIONS) : `authorized_keys` est **généré par `scw-fetch-ssh-keys`** depuis le metadata d'instance (figé création) + `/root/.ssh/instance_keys`. **Ne jamais éditer `authorized_keys` à la main** (wipé au prochain fetch — ça a causé un lockout en session). Nouvelle clé d'accès → l'ajouter à **`instance_keys`**. **Recovery de secours** = `alfred_par1` (interactif, dans le metadata figé → survit aux fetch).
 
 ### Session repo (même jour, antérieure) — setup repo + port Dockerfile
 - ✅ **Fork** `nousresearch/hermes-agent` → `benjaminberes-bp/jarvis-agent` + clone dans `claude-projects/jarvis-agent/`. `upstream` câblé pour re-merge.
@@ -42,7 +37,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 ## Prochaines actions (roadmap locale — Notion non câblé)
 
 ### Phase 0 — Provisioning & infra serveur
-1. ✅ **Instance `jarvis-prod` créée** (STANDARD3-X4C-16G, 100 Go, Ubuntu 24.04, nl-ams-1, IPv4 `51.15.106.239`) + clé SSH dédiée `jarvis_prod`. 🚨 **Reste : injecter la clé sur l'instance** (cf. bloc « Clé SSH dédiée » ci-dessus) + durcissement OS + install Docker.
+1. ✅ **Instance `jarvis-prod` créée** + ✅ **accès SSH `jarvis_prod` stable/reboot-proof** (via `instance_keys`, cf. bloc clé SSH) + ✅ **durcissement étape A** : `apt upgrade` (78 MAJ), **swap 4Gi** (vm.swappiness=10), `ufw` + `fail2ban` installés. sshd déjà key-only. **Reste item 1** : durcissement étape B (activer ufw 22/80/443 + jail fail2ban sshd) + **install Docker**.
 2. **[Critique/Small]** DNS + domaine (sous-domaine type `jarvis.…`) + Caddy/TLS.
 
 ### Phase 1 — Moteur Hermes + Honcho (dép. Phase 0)
