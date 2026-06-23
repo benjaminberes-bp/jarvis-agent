@@ -1,0 +1,79 @@
+# Honcho config — déploiement self-hosted Jarvis (jarvis-prod).
+# Copié vers /opt/honcho-stack/config.toml et monté dans api+deriver (override).
+# Tout le text-gen passe sur Anthropic + modèle léger (claude-haiku-4-5) à faible coût.
+# Embeddings = Ollama local (nomic-embed-text, 768 dims) → aucune donnée ne sort.
+# La CLÉ ANTHROPIC n'est PAS ici (secret) — elle est dans .env (LLM_ANTHROPIC_API_KEY),
+# qui override. Ce fichier est committable sans secret.
+#
+# Porté du fork sœur Alfred (docker/honcho/config.toml, recette éprouvée).
+
+[app]
+LOG_LEVEL = "INFO"
+NAMESPACE = "honcho"
+
+[auth]
+# api non exposée publiquement (réseau docker interne) → auth désactivée.
+USE_AUTH = false
+
+[llm]
+DEFAULT_MAX_TOKENS = 2500
+# Clés via env : LLM_ANTHROPIC_API_KEY (override). Ne rien mettre ici.
+
+# ---- Embeddings : Ollama local, OpenAI-compatible, 768 dims ----
+[embedding]
+VECTOR_DIMENSIONS = 768
+MAX_INPUT_TOKENS = 8192
+
+[embedding.model_config]
+transport = "openai"
+model = "nomic-embed-text"
+dimensions_mode = "never"   # nomic sort 768 fixes — ne pas forwarder dimensions=
+
+[embedding.model_config.overrides]
+base_url = "http://ollama:11434/v1"
+api_key_env = "OLLAMA_DUMMY_KEY"   # Ollama ignore la clé ; valeur factice via .env
+
+# ---- Deriver (worker qui dérive le modèle utilisateur) ----
+[deriver]
+ENABLED = true
+WORKERS = 1
+
+[deriver.model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+thinking_effort = "minimal"
+
+# ---- Dialectic (raisonnement à la demande) ----
+[dialectic.levels.minimal.model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+[dialectic.levels.low.model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+[dialectic.levels.medium.model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+[dialectic.levels.high.model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+[dialectic.levels.max.model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+
+# ---- Summary ----
+[summary.model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+
+# ---- Dream (consolidation) ----
+[dream.deduction_model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+[dream.induction_model_config]
+transport = "anthropic"
+model = "claude-haiku-4-5"
+
+[vector_store]
+TYPE = "pgvector"
+MIGRATED = false
+NAMESPACE = "honcho"

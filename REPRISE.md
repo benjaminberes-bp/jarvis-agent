@@ -57,7 +57,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 ### Phase 1 — Moteur Hermes + Honcho (dép. Phase 0)
 3. ✅ **Fork + remote** (PR #1) + ✅ **Dockerfile : bake Honcho** (PR #2, `--extra honcho`). **Build validé on-box** (item 4) → PR #2 mergeable.
 4. ✅ **Build image ON-BOX + premier boot** : `jarvis:latest` buildée (exit 0), boot s6 clean, smoke OK (honcho 2.0.1 importable, SHA baké, `config.yaml display:` plein). Volume `jarvis-data`.
-5. **[High/Large] ← PROCHAIN** Honcho self-hosted (pgvector+redis+ollama embeddings + haiku) + wire `memory.provider` (actuellement `''`=local).
+5. **[High/Large] ← EN COURS** Honcho self-hosted. ✅ **Kit de déploiement porté d'Alfred** (`docker/honcho/`, PR #3) : config.toml + override compose + env.example + README runbook adapté Jarvis. ⏭️ **Deploy on-box GATÉ** : besoin clé Anthropic (owner) + go RAM + reconfigure embeddings 768. Wire `memory.provider: honcho` (actuellement `''`) via édition directe config.yaml.
 
 ### Phase 2 — Canaux & UI (dép. Phase 1)
 6. **[High/Small]** Slack : app + tokens + connecteur natif.

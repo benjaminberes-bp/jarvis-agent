@@ -1,0 +1,41 @@
+# Override fusionné automatiquement avec le docker-compose.yml officiel de Honcho.
+#   cd /opt/honcho-stack && cp /opt/jarvis-agent/docker/honcho/docker-compose.override.yml .
+# Ajoute : Ollama (embeddings locaux), le montage du config.toml, et le réseau
+# partagé `honcho-net` pour que le conteneur `jarvis` atteigne l'API Honcho.
+#
+# Réseau partagé créé manuellement une fois : docker network create honcho-net
+# Puis attacher le conteneur Jarvis : docker network connect honcho-net jarvis
+# Côté Hermes : base_url = http://honcho-api:8000
+#
+# Porté du fork sœur Alfred (alfred-gw → jarvis).
+
+services:
+  api:
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+    networks:
+      default: {}
+      honcho-net:
+        aliases: [honcho-api]
+
+  deriver:
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+    networks:
+      default: {}
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      default: {}
+    # Pas de port publié : seulement joignable par api/deriver sur le réseau default.
+
+volumes:
+  ollama-data:
+
+networks:
+  honcho-net:
+    external: true
