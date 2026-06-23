@@ -175,9 +175,15 @@ RUN npm install --prefer-offline --no-audit && \
 # while still making Matrix work in the published container. Fixes #30399.
 #
 # The editable link is created after the source copy below.
+#
+# `--extra honcho` (honcho-ai==2.0.1, in uv.lock): the Jarvis deploy uses the
+# self-hosted Honcho memory backend, so the SDK must be baked rather than
+# lazy-installed at runtime (the venv lives in the image, not the data volume,
+# so a runtime `uv pip install` is lost on every container recreate). Mirrors
+# the sibling Alfred fork's Honcho bake (DECISIONS 2026-06-23).
 COPY pyproject.toml uv.lock ./
 RUN touch ./README.md
-RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra anthropic --extra bedrock --extra azure-identity --extra hindsight --extra matrix
+RUN uv sync --frozen --no-install-project --extra all --extra messaging --extra anthropic --extra bedrock --extra azure-identity --extra hindsight --extra matrix --extra honcho
 
 # ---------- Frontend build (cached independently from Python source) ----------
 # Copy only the frontend source trees first so that Python-only changes don't
@@ -196,6 +202,16 @@ COPY . .
 # cached layer above; `--no-deps` makes this a fast egg-link creation with no
 # resolution or downloads.
 RUN uv pip install --no-cache-dir --no-deps -e "."
+
+# NOTE: pas de rebrand `sed` Hermes→Jarvis ici (contrairement au fork sœur Alfred).
+# Raison (DECISIONS 2026-06-23) : Jarvis sert l'UI via hermes-webui (:8787), PAS le
+# dashboard baked → le rebrand `web_dist` viserait la mauvaise UI. Les libellés .py
+# restants sont du CLI/banner/docstring que l'utilisateur (Slack/WhatsApp/webui) ne
+# voit jamais. L'identité chat-facing ("You are Hermes Agent…", default_soul.py)
+# n'est qu'un DÉFAUT seedé dans $HERMES_HOME/SOUL.md s'il est absent (config.py) →
+# elle est écrasée par un SOUL.md custom Jarvis (défini à l'onboarding). Brander par
+# SOUL.md + titre hermes-webui, pas par sed → Dockerfile diverge d'upstream d'une
+# seule ligne (--extra honcho) = merges upstream quasi-triviaux.
 
 # Keep /opt/hermes immutable for the runtime hermes user. Hosted/container
 # instances must not be able to self-edit the installed source or venv; user
