@@ -14,6 +14,24 @@
 
 ---
 
+## 2026-06-23 — Port technique Alfred : Dockerfile maintenant, sync/runbooks différés
+
+**Contexte** : après création du fork (PR #1 mergée), exécuter le port de la *technique* d'Alfred (cf. décision « fork upstream » du même jour). Quoi porter, quand.
+
+**Décision**
+- **Dockerfile porté immédiatement** (branche `feat/port-alfred-technique`, PR #2) : (1) **bake Honcho** = `--extra honcho` ajouté à la ligne `uv sync` (sinon perdu à chaque recreate — le venv vit dans l'image, pas le volume `/opt/data`) ; (2) **rebrand au build** Hermes→Jarvis (blocs `sed` sur `*.py` + `web_dist`, display strings only), inséré **avant** le lock `chmod a-w /opt/hermes`. Pattern copié verbatim du fork Alfred (prouvé). **PAS porté** : CLIs/MCP marketing d'Alfred (Higgsfield, Meta Ads, Meta social, Notion MCP), backdrop custom — baggage non pertinent pour un assistant single-user CEO.
+- **`scripts/sync-from-box.sh` + `deploy/` (runbooks recreate/rollback) = DIFFÉRÉS** à Phase 0/4. Raison : fortement paramétrés serveur (volume `alfred-data`, alias SSH `alfred-deploy`, nom conteneur) — ces valeurs Jarvis **n'existent pas encore** (Scaleway non provisionné). Les porter maintenant = placeholders prématurés. À adapter quand le serveur existe.
+
+**Alternatives écartées**
+- Porter `deploy/` + sync wholesale maintenant : amène le contenu marketing (crons emprunteurs, memories-seed) + params serveur inexistants.
+- Lean extras (drop `messaging`/`matrix`/`hindsight` comme Alfred) : écarté pour minimiser le diff vs upstream non-testable hors-serveur ; `messaging` inclut déjà slack+qrcode. Optimisation image repoussée au 1er build serveur.
+
+**Impact** : `Dockerfile` Jarvis diverge d'upstream sur 2 points (honcho + rebrand) — divergence assumée (le Dockerfile porte l'identité du fork). Build **non testé** (pas de serveur) → validé au 1er build on-box (Phase 1 item 4). PR #2 à review par l'owner.
+
+**Statut** : actif
+
+---
+
 ## 2026-06-23 — Auth UI native + repo (fork upstream) + approche onboarding (voie B)
 
 **Contexte** : 3 décisions ouvertes du scaffolding tranchées/cadrées avec l'owner.

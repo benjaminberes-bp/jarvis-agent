@@ -10,11 +10,12 @@
 
 Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur **Hermes** (build on-box, rebrand au build) + **Honcho** self-hosted (mémoire) + **Slack** (natif) + **WhatsApp** (bridge Baileys natif) + UI **hermes-webui** (nesquena, purpose-built pour ce moteur).
 
-## 🆕 Dernière session (2026-06-23) — setup repo
+## 🆕 Dernière session (2026-06-23) — setup repo + port Dockerfile
 
 - ✅ **Fork** `nousresearch/hermes-agent` → `benjaminberes-bp/jarvis-agent` + clone dans `claude-projects/jarvis-agent/`. `upstream` câblé pour re-merge.
-- ✅ **6 docs suivi greffés** (CLAUDE, DECISIONS, REPRISE, CHANGELOG, `.claude/tech-pm-ia.config.md`, `docs/onboarding-ceo.md`). **Aucun fichier upstream écrasé** (CLAUDE/CHANGELOG non trackés en HEAD upstream — vérifié).
-- ✅ Commit `41491ef88` sur branche `chore/scaffolding-suivi` → push origin → **PR #1** vers `main` (https://github.com/benjaminberes-bp/jarvis-agent/pull/1).
+- ✅ **6 docs suivi greffés** (aucun fichier upstream écrasé — vérifié). **PR #1 mergée** vers `main`.
+- ✅ **Dockerfile porté d'Alfred** (branche `feat/port-alfred-technique`, **PR #2**) : `--extra honcho` baké + rebrand `sed` Hermes→Jarvis (`*.py` + `web_dist`, display strings only, avant le lock immutable). CLIs marketing non portés. ⚠️ **Build non testé** (pas de serveur).
+- ⏭️ Sync-from-box.sh + runbooks `deploy/` **différés** (besoin params serveur Scaleway).
 
 ### Session précédente (2026-06-23) — bootstrap
 - 📁 Docs de suivi rédigés + choix d'archi actés (cf. `DECISIONS.md`) : Scaleway dédié, single-user, rebrand au build, **UI=hermes-webui** (purpose-built Hermes, zéro glue), **WhatsApp=Baileys** (numéro dédié jetable obligatoire), Slack natif, Honcho self-hosted. Estimation ~4,5–8 j-ingé + ~30–80 €/mo.
@@ -26,7 +27,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 2. **[Critique/Small]** DNS + domaine (sous-domaine type `jarvis.…`) + Caddy/TLS.
 
 ### Phase 1 — Moteur Hermes + Honcho (dép. Phase 0)
-3. ✅ **Fork + remote git FAIT** (2026-06-23, PR #1). **Reste** : adapter le `Dockerfile` (sed rebrand Hermes→Jarvis + bake Honcho, porté d'Alfred) — **prochaine action**.
+3. ✅ **Fork + remote** (PR #1) + ✅ **Dockerfile porté** (PR #2 : `--extra honcho` + rebrand sed Hermes→Jarvis py/web_dist). **Build non testé** (pas de serveur) → à valider au 1er build on-box (item 4).
 4. **[Critique/Medium]** Build image **SUR LE SERVEUR** (gotchas : CRLF/s6, prune disque) + premier boot + `config.yaml` (`display: {}`).
 5. **[High/Large]** Honcho self-hosted (pgvector+redis+ollama embeddings + haiku) + wire `memory.provider`.
 
@@ -77,8 +78,9 @@ Choix actés : Scaleway dédié, single-user, rebrand au build, UI=hermes-webui 
 WhatsApp=Baileys (numéro dédié jetable), Slack natif, Honcho self-hosted, onboarding voie B.
 Estimation ~4,5–8 j-ingé, ~30–80 €/mo.
 
-PROCHAINE ÉTAPE : porter d'Alfred la TECHNIQUE (sed rebrand Hermes→Jarvis + bake Honcho du
-Dockerfile, runbooks deploy/, scripts/sync-from-box.sh) ; puis Phase 0 — provisionner Scaleway.
+PROCHAINE ÉTAPE : Dockerfile porté (PR #2 : honcho + rebrand). RESTE = Phase 0 provisionner
+Scaleway, PUIS build on-box (valide le Dockerfile non testé), PUIS adapter sync-from-box.sh +
+runbooks deploy/ (différés — besoin des params serveur).
 Décisions ouvertes : usage CEO précis (→ interview onboarding), voie A vs B définitif.
 Savoir-faire infra éprouvé = DECISIONS.md d'Alfred (../hermes-agent/alfred-agent/).
 ```
