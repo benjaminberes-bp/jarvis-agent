@@ -14,6 +14,24 @@
 
 ---
 
+## 2026-06-24 — Phase 2 item 8 : hermes-webui DÉPLOYÉ (two-container, auth native, brandé Jarvis)
+
+**Contexte** : UI web pour Jarvis (`nesquena/hermes-webui`, purpose-built Hermes). Comment la brancher sur l'agent `jarvis` existant ?
+
+**Décision / résultat** :
+- **Modèle two-container** (le bon fit) : `jarvis` reste l'agent (gateway Slack) ; `hermes-webui` = conteneur séparé (`ghcr.io/nesquena/hermes-webui:latest`) qui **partage le volume `jarvis-data`** (même config/sessions/mémoire) et lance l'agent **in-process** pour le chat UI. Pas de fork dans le repo (image publique).
+- **Pas de recreate jarvis imposé par la webui** : volume `hermes-agent-src` peuplé depuis l'image (`docker run --rm -v hermes-agent-src:/opt/hermes jarvis:latest true`) pour que la webui installe les deps agent ; réseau `hermes-net` créé + attaché à `jarvis` **à chaud** (`docker network connect`).
+- **Auth native** `HERMES_WEBUI_PASSWORD` (décision auth tranchée) — pas de magic-link. Brandé **« Jarvis »** (`HERMES_WEBUI_BOT_NAME`) → page login affiche Jarvis. Secret dans `/opt/webui.env` (600), run reproductible via `/opt/webui-run.sh` (non commités). UID/GID=10000 (match `hermes`).
+- **Accès loopback uniquement** (`127.0.0.1:8787`, Docker bypass ufw) → **tunnel SSH** (`ssh -N -L 8787:127.0.0.1:8787 jarvis-prod`). DNS/TLS public différé.
+- **API agent 8642 ÉCARTÉE en v1** : `API_SERVER_ENABLED=true` exige `API_SERVER_KEY` (même loopback) + la webui ne l'utilise que pour une **pastille de statut** (chat = in-process, sans API). Pas worth un recreate + wiring de clé pour une pastille → testé puis retiré.
+- **Validé** : `/health` ok, `/api/auth/status` → `auth_enabled:true, password_auth_enabled:true`, `/` → 302 (login), page brandée Jarvis, container healthy. Chat round-trip UI = à faire par l'owner via tunnel (browser).
+
+**Alternatives écartées** : single-container webui (lance SON propre agent, doublon du gateway) ; webui dans le conteneur jarvis (deps séparées + divergence upstream, maintenance lourde).
+
+**Statut** : actif — **item 8 CLOS** (UI opérationnelle, accès tunnel).
+
+---
+
 ## 2026-06-23 — Phase 2 item 6 : Slack natif DÉPLOYÉ + validé end-to-end
 
 **Contexte** : 1er canal. Owner a fourni les tokens Slack (app jarvis, workspace promup.slack.com / team T01AXTJLEN9) + tranché « réutiliser la clé Alfred » pour le moteur LLM.
