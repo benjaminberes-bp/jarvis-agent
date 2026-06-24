@@ -80,6 +80,8 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 **⏸️ Item 7 — WhatsApp : EN PAUSE** — à **confirmer avec Michael** avant tout dev (risque ban + numéro dédié jetable = engagement). Ne PAS démarrer sans son accord.
 
 **🔒 Phase 3 — onboarding/perso CEO : COLLABORATIF STRICT** — préparé **ensemble** avec l'owner. L'agent **ne fait rien en solo** : pas d'interview lancée, pas de `USER.md`/`SOUL.md` rédigé seul, pas d'install skills autonome. Voie B renforcée. Attendre déclenchement explicite owner.
+  - ✅ **Étape 1-2 outillée** : `docs/phase3-import.md` = prompt d'export mémoire (Source A, Michael lance dans SON Claude) + récup connecteurs Desktop (Source B) → croisement → liste MCP priorisée gated. **En attente** : Michael colle son export + liste connecteurs.
+  - ⏭️ Étape 3 = interview ciblée (`docs/onboarding-ceo.md`) sur les trous. Étape 4 = curation `USER.md`/`SOUL.md` + install gated.
 
 **Reliquats optionnels (au besoin, non prioritaires)** :
 - `SOUL.md` custom (persona Jarvis) — à faire **dans** Phase 3 (dépend de l'usage CEO).
