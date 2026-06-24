@@ -4,17 +4,21 @@
 
 ## Contexte rapide
 
-**jarvis** = nouvelle instance Hermes dédiée à l'**usage personnel de Michael Martin (CEO Bienprêter)**. Distinct d'Alfred (agent marketing collectif). Single-user. **Phase 0 close + Phase 1 build on-box validé** : serveur Scaleway `jarvis-prod` live, image `jarvis:latest` buildée + bootée (s6, honcho baké). Reste Phase 1 = Honcho self-hosted, puis canaux (Phase 2) et onboarding CEO (Phase 3).
+**jarvis** = nouvelle instance Hermes dédiée à l'**usage personnel de Michael Martin (CEO Bienprêter)**. Distinct d'Alfred (agent marketing collectif). Single-user. **Phases 0+1 closes, Phase 2 quasi close** : `jarvis-prod` live (Scaleway), agent + Honcho (mémoire) + Slack + hermes-webui opérationnels. **Reste** : finaliser expo webui Tailscale (action owner), récupérer l'export Phase 3 de Michael (DM envoyé), puis curation perso CEO. WhatsApp en pause.
 
 > ⚠️ **Dir projet = `claude-projects/jarvis-agent/`** (l'ancien `jarvis/` est vide). Toute session de travail se lance depuis `jarvis-agent/`. Remotes : `origin`=`benjaminberes-bp/jarvis-agent`, `upstream`=`nousresearch/hermes-agent` (re-merge).
 
 Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur **Hermes** (build on-box, rebrand au build) + **Honcho** self-hosted (mémoire) + **Slack** (natif) + **WhatsApp** (bridge Baileys natif) + UI **hermes-webui** (nesquena, purpose-built pour ce moteur).
 
-## 🆕 Dernière session (2026-06-24) — HONCHO + SLACK + WEBUI LIVE (Phase 1 close, Phase 2 quasi close)
+## 🆕 Dernière session (2026-06-24) — TOUT LIVE + 2 actions OWNER en attente (Tailscale + export Michael)
 
-> ✅ Build on-box (item 4) · ✅ **Honcho self-hosted** (item 5, status OK) · ✅ **Slack natif** (item 6, smoke DM end-to-end OK) · ✅ **hermes-webui** (item 8) : two-container, partage `jarvis-data`, auth native, brandé Jarvis, `127.0.0.1:8787` (tunnel SSH). Conteneurs live : `jarvis` (agent, gateway run, réseaux honcho-net+hermes-net), stack `honcho-stack-*`, `hermes-webui`.
-> ✅ **Tuning fait** : providers aux openrouter/nous coupés (→ anthropic/haiku, logs propres), **modèle défaut opus-4.6 conservé** (choix owner). **WhatsApp (item 7) EN PAUSE** (confirmer avec Michael). **Phase 3 = collaboratif strict** (rien en solo).
-> Secrets : `jarvis-prod:/opt/data/.env` (agent) + `/opt/webui.env` (webui password), 600, jamais commit.
+> ✅ Honcho (item 5) · Slack (item 6) · hermes-webui (item 8) · tuning. Conteneurs live : `jarvis` (agent, gateway run, réseaux honcho-net+hermes-net), `honcho-stack-*`, `hermes-webui`. Secrets : `/opt/data/.env` + `/opt/webui.env` (600).
+>
+> **⏳ 2 ACTIONS OWNER EN ATTENTE (reprise) :**
+> 1. **Tailscale Serve** — webui exposé en privé via Tailscale (PAS public, choix owner). Serveur joint au tailnet `tail2c7aff.ts.net` (`jarvis-prod`=100.84.249.125). **BLOQUÉ** : owner doit activer la feature Serve/HTTPS du tailnet (admin console — l'URL node-spécifique était `https://login.tailscale.com/f/serve?node=...`, sinon Settings→Features). **Dès activé** → `ssh jarvis-prod 'tailscale serve --bg http://127.0.0.1:8787'` → webui sur `https://jarvis-prod.tail2c7aff.ts.net`. PUIS envoyer à Michael : invite Tailscale (install sur ses appareils, rejoindre le tailnet) + le lien.
+> 2. **Export Phase 3** — DM envoyé à Michael via bot Jarvis (canal **`D0BCG02A21Z`**) avec le prompt d'export mémoire + demande connecteurs. **En attente de sa réponse.** Dès reçu → récup texte brut via bot token (`conversations.history` du DM, PAS mon compte Slack) → tri/curation gated `USER.md`/`SOUL.md`/MCP **avec l'owner** (Phase 3 = collaboratif strict).
+>
+> **WhatsApp (item 7) EN PAUSE** (confirmer avec Michael). **Modèle défaut opus-4.6 conservé.**
 
 ### 🐳 Build & boot (cette session)
 - Repo cloné on-box : **`/opt/jarvis-agent`** (HTTPS, repo public, branche `feat/port-alfred-technique`, HEAD `759ae605`). Scripts s6 en LF (`.gitattributes` + checkout Linux) → pas de casse s6.
@@ -63,7 +67,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 ### Phase 2 — Canaux & UI (dép. Phase 1)
 6. ✅ **Slack natif DÉPLOYÉ + validé** (workspace promup, app `@jarvis`, allowlist Benjamin+Michaël, Socket Mode). Smoke DM end-to-end OK (inbound → Honcho write → réponse anthropic). Tokens en `/opt/data/.env`.
 7. **[High/Medium]** WhatsApp Baileys : Node + **numéro dédié** + QR pairing + volume session + allowlist. ⚠️ risque ban.
-8. ✅ **hermes-webui DÉPLOYÉ** (two-container, `ghcr.io/nesquena/hermes-webui`). Partage `jarvis-data`, agent in-process, `hermes-net`, source via `hermes-agent-src`. Auth native, brandé Jarvis, `127.0.0.1:8787` (tunnel SSH). Runbook `docker/webui/README.md`. Chat UI à valider par owner via tunnel.
+8. ✅ **hermes-webui DÉPLOYÉ** (two-container, `ghcr.io/nesquena/hermes-webui`). Partage `jarvis-data`, agent in-process, `hermes-net`, source via `hermes-agent-src`. Auth native, brandé Jarvis, `127.0.0.1:8787`. Runbook `docker/webui/README.md`. **Expo = Tailscale privé** (en cours, cf. kickoff 🅰️) — pas d'expo publique (choix owner).
 
 ### Phase 3 — Perso CEO & contexte (dép. Phase 1+2)
 9. **[High/Small]** 1ʳᵉ session = **interview d'onboarding** de Michael par Jarvis (`docs/onboarding-ceo.md`).
@@ -73,11 +77,23 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 11. **[Medium/Medium]** Script de sync serveur→repo (adapter `sync-from-box.sh` d'Alfred).
 12. **[Medium/Small]** Runbooks recreate/rollback + smoke tests + vérif MCP.
 
-## 🎯 Kickoff prochaine session — Phase 3 (collaboratif) ; WhatsApp en pause
+## 🎯 Kickoff prochaine session — 2 actions OWNER en attente (reprise directe)
 
 **Pré-requis OK** : `ssh jarvis-prod` ; conteneurs live = `jarvis` (agent, `gateway run`, réseaux honcho-net+hermes-net), `honcho-stack-*`, `hermes-webui`. Honcho + Slack + webui opérationnels. ✅ **Tuning fait** (aux providers coupés ; opus conservé). Secrets `/opt/data/.env` + `/opt/webui.env`.
 
-**⏸️ Item 7 — WhatsApp : EN PAUSE** — à **confirmer avec Michael** avant tout dev (risque ban + numéro dédié jetable = engagement). Ne PAS démarrer sans son accord.
+### 🅰️ Finaliser Tailscale (expo webui privée)
+- Serveur joint au tailnet **`tail2c7aff.ts.net`** (`jarvis-prod`=100.84.249.125 ; `akumaben`=100.120.34.8).
+- **BLOQUÉ owner** : activer la feature **Serve/HTTPS** du tailnet (admin console Tailscale → Settings/Features ; l'URL node-spécifique générée était `https://login.tailscale.com/f/serve?node=…`).
+- **Dès activé** : `ssh jarvis-prod 'tailscale serve --bg http://127.0.0.1:8787'` → vérifier `tailscale serve status` + `curl -sk https://jarvis-prod.tail2c7aff.ts.net/health`. URL finale webui = **`https://jarvis-prod.tail2c7aff.ts.net`**.
+- **Puis** : préparer + envoyer à Michael (bot Jarvis, DM `D0BCG02A21Z`) un message : installer Tailscale sur ses appareils + rejoindre le tailnet + le lien. ⚠️ **Draft validé par owner avant envoi** (cold-DM CEO).
+
+### 🅱️ Récupérer l'export Phase 3 de Michael
+- DM déjà envoyé (bot Jarvis, canal **`D0BCG02A21Z`**) : prompt export mémoire + connecteurs.
+- **Quand Michael a répondu** : récupérer le **texte brut** via bot token (dans le conteneur `jarvis`, `SLACK_BOT_TOKEN` en env) :
+  `conversations.history` sur `D0BCG02A21Z` (script python stdlib comme `/tmp/wa_send.py`, cf. historique). PAS via mon compte Slack (le DM bot↔Michael n'y est pas visible).
+- Puis **tri/curation GATED avec l'owner** : `USER.md` + `SOUL.md` + liste MCP (croiser Source A cat.6 + connecteurs Source B). **Rien en solo.** Cf. `docs/phase3-import.md`.
+
+**⏸️ WhatsApp (item 7) : EN PAUSE** — confirmer avec Michael avant tout dev (risque ban + numéro dédié jetable). Ne PAS démarrer sans accord.
 
 **🔒 Phase 3 — onboarding/perso CEO : COLLABORATIF STRICT** — préparé **ensemble** avec l'owner. L'agent **ne fait rien en solo** : pas d'interview lancée, pas de `USER.md`/`SOUL.md` rédigé seul, pas d'install skills autonome. Voie B renforcée. Attendre déclenchement explicite owner.
   - ✅ **Étape 1-2 outillée** : `docs/phase3-import.md` = prompt d'export mémoire (Source A, Michael lance dans SON Claude) + récup connecteurs Desktop (Source B) → croisement → liste MCP priorisée gated. **En attente** : Michael colle son export + liste connecteurs.
@@ -118,24 +134,30 @@ rmdir /c/Users/bbere/claude-projects/jarvis 2>/dev/null
 
 ```
 Reprise projet jarvis (instance Hermes perso pour Michael Martin, CEO Bienprêter).
-Lance depuis claude-projects/jarvis-agent/. Lire DECISIONS.md + CLAUDE.md + REPRISE.md.
+Lance depuis claude-projects/jarvis-agent/. Lire DECISIONS.md (haut) + CLAUDE.md + REPRISE.md.
 
-ÉTAT : repo créé le 2026-06-23 (fork nousresearch/hermes-agent → benjaminberes-bp/jarvis-agent,
-PR #1 docs de suivi). origin + upstream câblés. Pas encore de code applicatif ni de serveur.
-Choix actés : Scaleway dédié, single-user, rebrand au build, UI=hermes-webui (purpose-built Hermes),
-WhatsApp=Baileys (numéro dédié jetable), Slack natif, Honcho self-hosted, onboarding voie B.
-Estimation ~4,5–8 j-ingé, ~30–80 €/mo.
+ÉTAT (2026-06-24) : Phases 0+1 closes, Phase 2 quasi close. jarvis-prod live (51.15.106.239),
+ssh jarvis-prod stable (clé dans /root/.ssh/instance_keys — NE PAS toucher authorized_keys).
+Conteneurs live : jarvis (agent, gateway run, réseaux honcho-net+hermes-net), honcho-stack-*
+(mémoire pgvector+redis+ollama768+haiku, memory.provider=honcho OK), hermes-webui
+(127.0.0.1:8787, auth password, brandé Jarvis). Slack natif live + validé (app @jarvis, workspace
+promup, allowlist Benjamin U08JAMRR1T3 + Michaël U01AU8P3BT8). Secrets: /opt/data/.env (agent:
+ANTHROPIC+SLACK_*) + /opt/webui.env (password webui), 600, jamais commit. Modèle défaut opus-4.6.
+PR #1→#6 mergées.
 
-ÉTAT : ✅ PHASE 0 CLOSE + ✅ PHASE 1 item 4 (build on-box). Instance jarvis-prod live (51.15.106.239),
-accès `ssh jarvis-prod` stable/reboot-proof (clé dans /root/.ssh/instance_keys — NE PAS éditer
-authorized_keys, scw-fetch le wipe), OS durci (ufw + fail2ban + swap 4Gi), Docker CE 29.6.0.
-Image `jarvis:latest` buildée on-box (exit 0), boot s6 clean, smoke OK (honcho 2.0.1 importable,
-SHA baké, config.yaml display: plein). Volume jarvis-data. Repo on-box /opt/jarvis-agent. PR #2 mergée.
+2 ACTIONS OWNER EN ATTENTE :
+1) TAILSCALE (expo webui privée, choix owner vs public) : serveur joint au tailnet tail2c7aff.ts.net
+   (jarvis-prod=100.84.249.125). BLOQUÉ : owner doit activer feature Serve/HTTPS du tailnet (admin
+   console). Dès activé → ssh jarvis-prod 'tailscale serve --bg http://127.0.0.1:8787' → webui sur
+   https://jarvis-prod.tail2c7aff.ts.net. Puis DM Michael (bot, canal D0BCG02A21Z) : invite Tailscale
+   + lien (draft validé owner avant envoi).
+2) EXPORT PHASE 3 : DM déjà envoyé à Michael (bot Jarvis, canal D0BCG02A21Z) = prompt export mémoire
+   + connecteurs (cf. docs/phase3-import.md). En attente réponse. Dès reçu → récup texte brut via
+   bot token (conversations.history sur D0BCG02A21Z, dans le conteneur jarvis) → curation GATED avec
+   owner : USER.md + SOUL.md + liste MCP. Phase 3 = collaboratif strict, RIEN en solo.
 
-PROCHAINE ÉTAPE : Phase 1 item 5 — Honcho self-hosted (docker compose pgvector+redis+ollama
-embeddings+haiku) sur jarvis-prod, réf = stack Honcho d'Alfred (../hermes-agent/alfred-agent/ +
-/opt/honcho-stack box Alfred). Puis wire config.yaml memory.provider=honcho (édit DIRECT, pas
-hermes config set). Honcho en 127.0.0.1: (Docker bypass ufw). PUIS Phase 2 (Slack/WhatsApp/webui).
-Décisions ouvertes : usage CEO précis (→ interview onboarding Phase 3), voie A vs B définitif.
-Savoir-faire infra éprouvé = DECISIONS.md d'Alfred (../hermes-agent/alfred-agent/).
+EN PAUSE : WhatsApp (item 7) — confirmer avec Michael avant tout dev.
+Rappels : config.yaml édité DIRECT (pas hermes config set) ; recreate jarvis = gateway run +
+--env-file <vol>/.env (chemin HÔTE) + réattacher honcho-net ET hermes-net ; recreate webui =
+bash /opt/webui-run.sh ; commits PR-based jamais sur main. Réf infra = DECISIONS.md d'Alfred.
 ```
