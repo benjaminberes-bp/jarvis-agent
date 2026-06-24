@@ -20,11 +20,11 @@
 
 **Décision (owner)** : **Tailscale (réseau privé)**, pas d'exposition publique. Raison : la webui lance l'agent **in-process** (clé Anthropic, mémoire Honcho, accès workspace, exécution d'outils/code) → une page de login publique sur Internet = surface trop sensible pour un agent **perso CEO, secteur régulé**. Tailscale = zéro port public, accès facile multi-appareils, HTTPS auto (MagicDNS), supporté nativement par hermes-webui. `bienpreter.com` DNS non touché, ufw inchangé.
 
-**État technique** : Tailscale installé sur `jarvis-prod` (v1.98.4) + **serveur authentifié dans le tailnet `tail2c7aff.ts.net`** (owner = benjamin.beres@). Node `jarvis-prod` = `100.84.249.125` ; machine owner `akumaben` = `100.120.34.8` (déjà sur le tailnet). **`tailscale serve` BLOQUÉ** : feature Serve/HTTPS pas activée sur le tailnet → action owner (admin console). Une fois activé : `tailscale serve --bg http://127.0.0.1:8787` → webui sur `https://jarvis-prod.tail2c7aff.ts.net`.
+**État technique** : Tailscale v1.98.4 sur `jarvis-prod`, joint au tailnet `tail2c7aff.ts.net` (owner = benjamin.beres@ ; node `jarvis-prod`=100.84.249.125, `akumaben`=100.120.34.8). ✅ Feature Serve activée + `tailscale serve --bg http://127.0.0.1:8787` (persistant) → **webui LIVE sur `https://jarvis-prod.tail2c7aff.ts.net`** (HTTPS auto, health 200, login actif). Reste : inviter Michael au tailnet (admin console) + lui transmettre lien + mdp.
 
 **Alternatives écartées** : public + Cloudflare Access (overkill, dépend de bienpreter sur CF) ; public + mot de passe seul (surface max, déconseillé régulé) ; tunnel SSH (sûr mais friction terminal à chaque accès — Tailscale = même sécurité + ergonomie).
 
-**Statut** : actif (en cours de finalisation — gating owner : activer Serve)
+**Statut** : actif
 
 ---
 

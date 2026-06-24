@@ -81,11 +81,9 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 
 **Pré-requis OK** : `ssh jarvis-prod` ; conteneurs live = `jarvis` (agent, `gateway run`, réseaux honcho-net+hermes-net), `honcho-stack-*`, `hermes-webui`. Honcho + Slack + webui opérationnels. ✅ **Tuning fait** (aux providers coupés ; opus conservé). Secrets `/opt/data/.env` + `/opt/webui.env`.
 
-### 🅰️ Finaliser Tailscale (expo webui privée)
-- Serveur joint au tailnet **`tail2c7aff.ts.net`** (`jarvis-prod`=100.84.249.125 ; `akumaben`=100.120.34.8).
-- **BLOQUÉ owner** : activer la feature **Serve/HTTPS** du tailnet (admin console Tailscale → Settings/Features ; l'URL node-spécifique générée était `https://login.tailscale.com/f/serve?node=…`).
-- **Dès activé** : `ssh jarvis-prod 'tailscale serve --bg http://127.0.0.1:8787'` → vérifier `tailscale serve status` + `curl -sk https://jarvis-prod.tail2c7aff.ts.net/health`. URL finale webui = **`https://jarvis-prod.tail2c7aff.ts.net`**.
-- **Puis** : préparer + envoyer à Michael (bot Jarvis, DM `D0BCG02A21Z`) un message : installer Tailscale sur ses appareils + rejoindre le tailnet + le lien. ⚠️ **Draft validé par owner avant envoi** (cold-DM CEO).
+### 🅰️ Tailscale — ✅ webui LIVE en privé ; reste = inviter Michael
+- ✅ Feature Serve activée + **`tailscale serve --bg http://127.0.0.1:8787`** lancé (persistant). Webui accessible sur **`https://jarvis-prod.tail2c7aff.ts.net`** (HTTPS auto, health 200, login actif). Tailnet `tail2c7aff.ts.net` ; `akumaben` (owner) déjà dessus → accès OK.
+- ⏭️ **Reste (owner + collaboratif)** : (1) **inviter Michael au tailnet** (admin console Tailscale → Users/Share — action owner, sinon le lien ne marche pas pour lui), (2) lui envoyer (bot Jarvis, DM `D0BCG02A21Z`) : installer Tailscale sur ses appareils + lien `https://jarvis-prod.tail2c7aff.ts.net` + mot de passe webui. ⚠️ **Draft validé owner avant envoi** (cold-DM CEO).
 
 ### 🅱️ Récupérer l'export Phase 3 de Michael
 - DM déjà envoyé (bot Jarvis, canal **`D0BCG02A21Z`**) : prompt export mémoire + connecteurs.
