@@ -12,7 +12,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 
 ## 🆕 Dernière session (2026-06-24) — TOUT LIVE + 2 actions OWNER en attente (Tailscale + export Michael)
 
-> ✅ Honcho (item 5) · Slack (item 6) · hermes-webui (item 8) · tuning. Conteneurs live : `jarvis` (agent, gateway run, réseaux honcho-net+hermes-net), `honcho-stack-*`, `hermes-webui`. Secrets : `/opt/data/.env` + `/opt/webui.env` (600).
+> ✅ Honcho (item 5) · Slack (item 6) · hermes-webui (item 8, **expo Tailscale + accès validé end-to-end**) · tuning. Conteneurs live : `jarvis` (agent, gateway run, réseaux honcho-net+hermes-net), `honcho-stack-*`, `hermes-webui`. Secrets : `/opt/data/.env` + `/opt/webui.env` (600).
 >
 > **⏳ 2 ACTIONS OWNER EN ATTENTE (reprise) :**
 > 1. **Tailscale Serve** — webui exposé en privé via Tailscale (PAS public, choix owner). Serveur joint au tailnet `tail2c7aff.ts.net` (`jarvis-prod`=100.84.249.125). **BLOQUÉ** : owner doit activer la feature Serve/HTTPS du tailnet (admin console — l'URL node-spécifique était `https://login.tailscale.com/f/serve?node=...`, sinon Settings→Features). **Dès activé** → `ssh jarvis-prod 'tailscale serve --bg http://127.0.0.1:8787'` → webui sur `https://jarvis-prod.tail2c7aff.ts.net`. PUIS envoyer à Michael : invite Tailscale (install sur ses appareils, rejoindre le tailnet) + le lien.
@@ -81,8 +81,10 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 
 **Pré-requis OK** : `ssh jarvis-prod` ; conteneurs live = `jarvis` (agent, `gateway run`, réseaux honcho-net+hermes-net), `honcho-stack-*`, `hermes-webui`. Honcho + Slack + webui opérationnels. ✅ **Tuning fait** (aux providers coupés ; opus conservé). Secrets `/opt/data/.env` + `/opt/webui.env`.
 
-### 🅰️ Tailscale — ✅ webui LIVE en privé ; reste = inviter Michael
-- ✅ Feature Serve activée + **`tailscale serve --bg http://127.0.0.1:8787`** lancé (persistant). Webui accessible sur **`https://jarvis-prod.tail2c7aff.ts.net`** (HTTPS auto, health 200, login actif). Tailnet `tail2c7aff.ts.net` ; `akumaben` (owner) déjà dessus → accès OK.
+### 🅰️ Tailscale — ✅ webui LIVE + ACCÈS VALIDÉ ; reste = inviter Michael
+- ✅ Feature Serve activée + **`tailscale serve --bg http://127.0.0.1:8787`** (persistant). Webui sur **`https://jarvis-prod.tail2c7aff.ts.net`**.
+- ✅ **Accès validé end-to-end depuis akumaben** (browser `/browse`) : login « Jarvis — Sign in » → mdp OK → UI complète chargée (composer « Message Jarvis… », footer Claude Opus 4.6). Login = `input[type=password]` + Enter (le bouton matche plusieurs éléments).
+- ⚠️ **Gotcha** : **Tailscale doit rester CONNECTÉ côté client** (sur akumaben). Si `logged out` (BackendState=NeedsLogin) → webui injoignable (`HTTP 000`). Reco : reconnecter via icône Tailscale ou `tailscale up`. CLI Windows = `C:\Program Files\Tailscale\tailscale.exe` (absent du PATH Git Bash).
 - ⏭️ **Reste (owner + collaboratif)** : (1) **inviter Michael au tailnet** (admin console Tailscale → Users/Share — action owner, sinon le lien ne marche pas pour lui), (2) lui envoyer (bot Jarvis, DM `D0BCG02A21Z`) : installer Tailscale sur ses appareils + lien `https://jarvis-prod.tail2c7aff.ts.net` + mot de passe webui. ⚠️ **Draft validé owner avant envoi** (cold-DM CEO).
 
 ### 🅱️ Récupérer l'export Phase 3 de Michael
@@ -141,14 +143,16 @@ Conteneurs live : jarvis (agent, gateway run, réseaux honcho-net+hermes-net), h
 (127.0.0.1:8787, auth password, brandé Jarvis). Slack natif live + validé (app @jarvis, workspace
 promup, allowlist Benjamin U08JAMRR1T3 + Michaël U01AU8P3BT8). Secrets: /opt/data/.env (agent:
 ANTHROPIC+SLACK_*) + /opt/webui.env (password webui), 600, jamais commit. Modèle défaut opus-4.6.
-PR #1→#6 mergées.
+PR #1→#8 mergées.
+
+WEBUI : ✅ exposé en privé via Tailscale (tailscale serve), accès VALIDÉ end-to-end depuis akumaben
+(login Jarvis → UI Opus 4.6). URL https://jarvis-prod.tail2c7aff.ts.net (mdp dans /opt/webui.env).
+⚠️ Tailscale doit rester CONNECTÉ côté client sinon injoignable (HTTP 000).
 
 2 ACTIONS OWNER EN ATTENTE :
-1) TAILSCALE (expo webui privée, choix owner vs public) : serveur joint au tailnet tail2c7aff.ts.net
-   (jarvis-prod=100.84.249.125). BLOQUÉ : owner doit activer feature Serve/HTTPS du tailnet (admin
-   console). Dès activé → ssh jarvis-prod 'tailscale serve --bg http://127.0.0.1:8787' → webui sur
-   https://jarvis-prod.tail2c7aff.ts.net. Puis DM Michael (bot, canal D0BCG02A21Z) : invite Tailscale
-   + lien (draft validé owner avant envoi).
+1) INVITER MICHAEL au tailnet tail2c7aff.ts.net (admin console Tailscale) PUIS lui envoyer (bot Jarvis,
+   DM D0BCG02A21Z) : installer Tailscale sur ses appareils + lien https://jarvis-prod.tail2c7aff.ts.net
+   + mdp webui. Draft DM validé owner avant envoi.
 2) EXPORT PHASE 3 : DM déjà envoyé à Michael (bot Jarvis, canal D0BCG02A21Z) = prompt export mémoire
    + connecteurs (cf. docs/phase3-import.md). En attente réponse. Dès reçu → récup texte brut via
    bot token (conversations.history sur D0BCG02A21Z, dans le conteneur jarvis) → curation GATED avec
