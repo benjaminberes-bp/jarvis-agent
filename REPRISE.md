@@ -13,7 +13,7 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 ## 🆕 Dernière session (2026-06-24) — HONCHO + SLACK + WEBUI LIVE (Phase 1 close, Phase 2 quasi close)
 
 > ✅ Build on-box (item 4) · ✅ **Honcho self-hosted** (item 5, status OK) · ✅ **Slack natif** (item 6, smoke DM end-to-end OK) · ✅ **hermes-webui** (item 8) : two-container, partage `jarvis-data`, auth native, brandé Jarvis, `127.0.0.1:8787` (tunnel SSH). Conteneurs live : `jarvis` (agent, gateway run, réseaux honcho-net+hermes-net), stack `honcho-stack-*`, `hermes-webui`.
-> **Reste Phase 2 = item 7 WhatsApp Baileys** (bloqué = numéro dédié owner). **Puis Phase 3 onboarding** + tuning léger (SOUL.md persona, modèle défaut opus→haiku/sonnet, couper providers aux).
+> ✅ **Tuning fait** : providers aux openrouter/nous coupés (→ anthropic/haiku, logs propres), **modèle défaut opus-4.6 conservé** (choix owner). **WhatsApp (item 7) EN PAUSE** (confirmer avec Michael). **Phase 3 = collaboratif strict** (rien en solo).
 > Secrets : `jarvis-prod:/opt/data/.env` (agent) + `/opt/webui.env` (webui password), 600, jamais commit.
 
 ### 🐳 Build & boot (cette session)
@@ -73,22 +73,20 @@ Composants visés (estimation ~4,5–8 j-ingé) : serveur **Scaleway** + moteur 
 11. **[Medium/Medium]** Script de sync serveur→repo (adapter `sync-from-box.sh` d'Alfred).
 12. **[Medium/Small]** Runbooks recreate/rollback + smoke tests + vérif MCP.
 
-## 🎯 Kickoff prochaine session — WhatsApp (item 7) + tuning + Phase 3
+## 🎯 Kickoff prochaine session — Phase 3 (collaboratif) ; WhatsApp en pause
 
-**Pré-requis OK** : `ssh jarvis-prod` ; conteneurs live = `jarvis` (agent, `gateway run`, réseaux honcho-net+hermes-net), `honcho-stack-*`, `hermes-webui`. Honcho + Slack + webui opérationnels. Secrets `/opt/data/.env` + `/opt/webui.env`.
+**Pré-requis OK** : `ssh jarvis-prod` ; conteneurs live = `jarvis` (agent, `gateway run`, réseaux honcho-net+hermes-net), `honcho-stack-*`, `hermes-webui`. Honcho + Slack + webui opérationnels. ✅ **Tuning fait** (aux providers coupés ; opus conservé). Secrets `/opt/data/.env` + `/opt/webui.env`.
 
-**Item 7 — WhatsApp Baileys** (`[High/Medium]`, ⚠️ risque ban) — **BLOQUÉ owner = numéro dédié jetable** (jamais corp). Node + QR pairing + **volume session persistant** + allowlist stricte. Bridge API non-officielle → casse possible aux updates WA. Wire comme Slack (tokens/session via env/volume + recreate `jarvis`).
+**⏸️ Item 7 — WhatsApp : EN PAUSE** — à **confirmer avec Michael** avant tout dev (risque ban + numéro dédié jetable = engagement). Ne PAS démarrer sans son accord.
 
-**Tuning (non bloquant, items légers, éditer `config.yaml` DIRECT)** :
-- **SOUL.md custom Jarvis** (persona) → écrase « Hermes Agent ». Lié onboarding Phase 3.
-- **Modèle défaut** `claude-opus-4-6` (cher) → haiku/sonnet pour le quotidien.
-- **Couper providers auxiliaires** `openrouter`/`nous` (sans crédit → warnings logs).
-- **`/hermes sethome`** Slack (delivery cron/cross-platform).
-- Optionnel : activer **API agent 8642** (`API_SERVER_ENABLED`+`API_SERVER_KEY` dans `.env` ; recreate) → pastille statut gateway dans la webui.
+**🔒 Phase 3 — onboarding/perso CEO : COLLABORATIF STRICT** — préparé **ensemble** avec l'owner. L'agent **ne fait rien en solo** : pas d'interview lancée, pas de `USER.md`/`SOUL.md` rédigé seul, pas d'install skills autonome. Voie B renforcée. Attendre déclenchement explicite owner.
 
-**Phase 3 — onboarding voie B** : interview Michael par Jarvis (Slack/webui) → analyse transcript hors-serveur (Claude Code) → `USER.md` + `SOUL.md` + skills/MCP délibérés.
+**Reliquats optionnels (au besoin, non prioritaires)** :
+- `SOUL.md` custom (persona Jarvis) — à faire **dans** Phase 3 (dépend de l'usage CEO).
+- `/hermes sethome` Slack (delivery cron/cross-platform).
+- API agent 8642 (`API_SERVER_ENABLED`+`API_SERVER_KEY` ; recreate) → pastille statut gateway webui.
 
-**Recreate webui** : `bash /opt/webui-run.sh`. **Recreate jarvis** : CMD `gateway run` + `--env-file <vol>/.env` (chemin HÔTE) + réattacher `honcho-net` ET `hermes-net`. ⚠️ Après rebuild image → repeupler `hermes-agent-src` (cf. `docker/webui/README.md`).
+**Recreate webui** : `bash /opt/webui-run.sh`. **Recreate jarvis** : CMD `gateway run` + `--env-file <vol>/.env` (chemin HÔTE) + réattacher `honcho-net` ET `hermes-net`. ⚠️ Après rebuild image → repeupler `hermes-agent-src` (cf. `docker/webui/README.md`). **`config.yaml` édité DIRECT** (backups `config.yaml.bak-*` dans le volume).
 
 **Rappels durs** : `authorized_keys` jamais à la main (scw-fetch wipe → mémoire `scaleway-ssh-instance-keys`) ; Docker bypass ufw → `127.0.0.1:` ; `config.yaml` édité **direct** (pas `hermes config set`), `display:` jamais `null` ; secrets en `/opt/data/.env` (600), jamais commit ; commits PR-based, jamais sur `main`. **Recreate jarvis = CMD `gateway run` + `--env-file <vol>/.env` (chemin HÔTE) + réattacher `honcho-net`.**
 

@@ -14,6 +14,23 @@
 
 ---
 
+## 2026-06-24 — Tuning post-déploiement + cadrage WhatsApp / Phase 3 (arbitrages owner)
+
+**Contexte** : après Honcho+Slack+webui live, arbitrer les points ouverts de tuning + la suite.
+
+**Décisions (owner)** :
+- **Modèle défaut = `claude-opus-4.6` CONSERVÉ** (pas de bascule haiku/sonnet). Choix assumé (qualité > coût pour l'usage CEO).
+- **Providers auxiliaires `openrouter`/`nous` coupés** : les 14 tâches du bloc `auxiliary:` de `config.yaml` (vision, web_extract, compression, title_generation, etc.) passées de `provider: auto` → **`provider: anthropic`** (édition directe lignes 185-284, backup pris). Cause : `auto` probait openrouter+nous (sans crédit → warnings « marking unhealthy, payment/credit error » à chaque turn) avant fallback anthropic. Résultat vérifié : plus aucun warning, auxiliary tourne sur `anthropic claude-haiku-4-5` (léger), turn principal toujours `opus-4-6`.
+- **`/hermes sethome` Slack : non fait** (optionnel, nécessite un choix de canal — à voir au besoin pour le delivery cron/cross-platform).
+- **WhatsApp (item 7) = EN PAUSE** : à **confirmer avec l'utilisateur final (Michael)** avant tout dev. Ne pas démarrer le bridge Baileys / numéro dédié sans son accord (risque ban + numéro jetable = engagement).
+- **Phase 3 (onboarding/perso CEO) = COLLABORATIF STRICT** : préparé **ensemble** avec l'owner, l'agent **ne fait rien en solo** (pas d'interview lancée, pas de USER.md/SOUL.md rédigé seul, pas d'install skills autonome). Renforce la voie B (human-in-the-loop) déjà actée.
+
+**Impact** : config runtime nettoyée (logs propres). Roadmap : Phase 2 close hors WhatsApp (pausé). Prochaine action = préparation Phase 3 conjointe, sur déclenchement owner.
+
+**Statut** : actif
+
+---
+
 ## 2026-06-24 — Phase 2 item 8 : hermes-webui DÉPLOYÉ (two-container, auth native, brandé Jarvis)
 
 **Contexte** : UI web pour Jarvis (`nesquena/hermes-webui`, purpose-built Hermes). Comment la brancher sur l'agent `jarvis` existant ?
